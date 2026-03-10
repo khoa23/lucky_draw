@@ -1,5 +1,6 @@
 Chương trình quay số may mắn
 
+App Showcase
 
 <img width="1920" height="1040" alt="image" src="https://github.com/user-attachments/assets/d90cc761-02d7-4b08-9eb8-e6f32ef3cb1d" />
 
