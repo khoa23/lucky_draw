@@ -163,3 +163,4 @@ D:\Code\lucky_draw\lucky_draw\bin\Debug\net9.0\RBush.dll
 D:\Code\lucky_draw\lucky_draw\bin\Debug\net9.0\SixLabors.Fonts.dll
 D:\Code\lucky_draw\lucky_draw\bin\Debug\net9.0\System.IO.Packaging.dll
 D:\Code\lucky_draw\lucky_draw\obj\Debug\net9.0\compressed\z4a5r5ig42-tifl2ret90.gz
+D:\Code\lucky_draw\lucky_draw\obj\Debug\net9.0\lucky_draw.sourcelink.json

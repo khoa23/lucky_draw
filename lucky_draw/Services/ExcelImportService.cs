@@ -1,6 +1,9 @@
-﻿using lucky_draw.Data;
+using lucky_draw.Data;
 using lucky_draw.Models;
 using ExcelDataReader;
+using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
 
 namespace lucky_draw.Services
 {
@@ -18,26 +21,81 @@ namespace lucky_draw.Services
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
             using var reader = ExcelReaderFactory.CreateReader(excelStream);
+            
+            // Tạo DataTable để chứa dữ liệu tạm thời trước khi BulkCopy
+            var dt = new DataTable();
+            dt.Columns.Add("BRCD");
+            dt.Columns.Add("LCLBRNM");
+            dt.Columns.Add("FTRSERIES");
+            dt.Columns.Add("LSTSERIES");
+            dt.Columns.Add("IDXACNO");
+            dt.Columns.Add("NM");
+            dt.Columns.Add("IDNO");
+            dt.Columns.Add("DIACHI");
+            dt.Columns.Add("CUSTSEQ");
+            dt.Columns.Add("CARDNO");
+
+            var batchSize = 50000; // Mỗi đợt xử lý 50.000 dòng
+            var connectionString = _context.Database.GetConnectionString();
+            if (string.IsNullOrEmpty(connectionString))
+            {
+                throw new Exception("Connection string not found.");
+            }
+            
             var isFirstRow = true;
             while (reader.Read())
             {
                 if (isFirstRow) { isFirstRow = false; continue; }
-                var entity = new Temptable
+
+                dt.Rows.Add(
+                    reader.GetValue(0)?.ToString(),
+                    reader.GetValue(1)?.ToString(),
+                    reader.GetValue(2)?.ToString(),
+                    reader.GetValue(3)?.ToString(),
+                    reader.GetValue(4)?.ToString(),
+                    reader.GetValue(5)?.ToString(),
+                    reader.GetValue(6)?.ToString(),
+                    reader.GetValue(7)?.ToString(),
+                    reader.GetValue(8)?.ToString(),
+                    reader.GetValue(9)?.ToString()
+                );
+
+                if (dt.Rows.Count >= batchSize)
                 {
-                    BRCD = reader.GetValue(0)?.ToString(),
-                    LCLBRNM = reader.GetValue(1)?.ToString(),
-                    FTRSERIES = reader.GetValue(2)?.ToString(),
-                    LSTSERIES = reader.GetValue(3)?.ToString(),
-                    IDXACNO = reader.GetValue(4)?.ToString(),
-                    NM = reader.GetValue(5)?.ToString(),
-                    IDNO = reader.GetValue(6)?.ToString(),
-                    DIACHI = reader.GetValue(7)?.ToString(),
-                    CUSTSEQ = reader.GetValue(8)?.ToString(),
-                    CARDNO = reader.GetValue(9)?.ToString(),
-                };
-                _context.Temptable.Add(entity);
+                    await PerformBulkCopy(dt, connectionString);
+                    dt.Clear();
+                }
             }
-            await _context.SaveChangesAsync();
+
+            if (dt.Rows.Count > 0)
+            {
+                await PerformBulkCopy(dt, connectionString);
+            }
+        }
+
+        private async Task PerformBulkCopy(DataTable dt, string connectionString)
+        {
+            using (var bulkCopy = new SqlBulkCopy(connectionString))
+            {
+                bulkCopy.DestinationTableName = "Temptable"; // Tên bảng trong DB
+                bulkCopy.BatchSize = 10000;
+                bulkCopy.BulkCopyTimeout = 600; // 10 phút
+
+                // Mapping các cột (nếu tên cột trong DT và DB khác nhau)
+                bulkCopy.ColumnMappings.Add("BRCD", "BRCD");
+                bulkCopy.ColumnMappings.Add("LCLBRNM", "LCLBRNM");
+                bulkCopy.ColumnMappings.Add("FTRSERIES", "FTRSERIES");
+                bulkCopy.ColumnMappings.Add("LSTSERIES", "LSTSERIES");
+                bulkCopy.ColumnMappings.Add("IDXACNO", "IDXACNO");
+                bulkCopy.ColumnMappings.Add("NM", "NM");
+                bulkCopy.ColumnMappings.Add("IDNO", "IDNO");
+                bulkCopy.ColumnMappings.Add("DIACHI", "DIACHI");
+                bulkCopy.ColumnMappings.Add("CUSTSEQ", "CUSTSEQ");
+                bulkCopy.ColumnMappings.Add("CARDNO", "CARDNO");
+
+                await bulkCopy.WriteToServerAsync(dt);
+            }
         }
     }
 }
+

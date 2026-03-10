@@ -1,4 +1,4 @@
-﻿using lucky_draw.Data;
+using lucky_draw.Data;
 using lucky_draw.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +15,12 @@ builder.Services.AddScoped<LuckyDrawService>();
 // Add MVC
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromHours(24);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+});
 
 builder.Services.AddCors(options =>
 {
@@ -38,6 +44,7 @@ if (!app.Environment.IsDevelopment())
 }
 app.UseStaticFiles();
 app.UseRouting();
+app.UseSession();
 
 app.MapControllerRoute(
     name: "default",

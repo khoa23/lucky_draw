@@ -1,4 +1,4 @@
-﻿@model IEnumerable<lucky_draw.Models.CustomerReward>
+@model IEnumerable<lucky_draw.Models.CustomerReward>
 @{
     Layout = null;
     ViewBag.Title = "Báo cáo Kết quả Quay số";
@@ -10,6 +10,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TDbank - Báo cáo kết quả</title>
+    <link rel="icon" type="image/png" href="~/img/luckydrawicon.png">
     <!-- Local Assets -->
     <script src="~/lib/tailwind/tailwindcss.js"></script>
     <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
@@ -122,8 +123,8 @@
 <body>
     <header class="report-header p-4 px-8 flex justify-between items-center">
         <div class="flex items-center gap-4">
-            <div class="bg-red-700 text-white p-2 rounded-lg">
-                <i class="bi bi-file-earmark-bar-graph-fill text-2xl"></i>
+            <div class="p-1">
+                <img src="~/img/luckydrawicon.png" alt="Icon" class="h-12">
             </div>
             <div>
                 <div class="text-xs font-bold uppercase tracking-tight text-gray-500">Hệ thống báo cáo</div>

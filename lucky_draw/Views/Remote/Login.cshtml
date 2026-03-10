@@ -1,0 +1,72 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDbank - Xác thực Remote</title>
+    <link rel="icon" type="image/png" href="~/img/luckydrawicon.png">
+    <script src="~/lib/tailwind/tailwindcss.js"></script>
+    <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
+    <style>
+        body {
+            background: #c0262d;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .login-card {
+            background: white;
+            width: 100%;
+            max-width: 400px;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card animate__animated animate__zoomIn">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4">
+                <i class="bi bi-shield-lock-fill text-red-600 text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-black text-gray-800">XÁC THỰC REMOTE</h1>
+            <p class="text-gray-500 text-sm mt-1">Vui lòng nhập mật khẩu để tiếp tục</p>
+        </div>
+
+        <form method="post" action="/Remote/Login">
+            <div class="mb-6">
+                <label class="block text-gray-700 text-xs font-bold uppercase mb-2 ml-1">Mật khẩu truy cập</label>
+                <input type="password" name="password" required autofocus
+                    class="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-red-500 focus:outline-none transition-colors text-center text-lg font-bold tracking-widest"
+                    placeholder="••••••••">
+            </div>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="mb-6 p-3 bg-red-50 text-red-600 text-sm font-medium rounded-lg text-center animate__animated animate__shakeX">
+                    <i class="bi bi-exclamation-circle-fill mr-1"></i> @ViewBag.Error
+                </div>
+            }
+
+            <button type="submit" 
+                class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl shadow-lg shadow-red-200 transition-all transform active:scale-95 uppercase tracking-wider">
+                Xác nhận
+            </button>
+        </form>
+
+        <div class="mt-8 text-center">
+            <a href="/" class="text-gray-400 text-xs hover:text-red-600 transition-colors font-medium">
+                <i class="bi bi-arrow-left"></i> Quay lại Dashboard
+            </a>
+        </div>
+    </div>
+</body>
+</html>

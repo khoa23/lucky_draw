@@ -1,6 +1,7 @@
 using System;
 using lucky_draw.Data;
 using lucky_draw.Models;
+using lucky_draw.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -11,10 +12,12 @@ namespace lucky_draw.Controllers.Api
     public class LuckyDrawApiController : ControllerBase
     {
         private readonly LuckyDrawDbContext _context;
+        private readonly LuckyDrawService _drawService;
 
-        public LuckyDrawApiController(LuckyDrawDbContext context)
+        public LuckyDrawApiController(LuckyDrawDbContext context, LuckyDrawService drawService)
         {
             _context = context;
+            _drawService = drawService;
         }
 
         [HttpGet("programs")]
@@ -27,6 +30,7 @@ namespace lucky_draw.Controllers.Api
         [HttpGet("prizes/{programId}")]
         public async Task<IActionResult> GetPrizes(int programId)
         {
+            // Tối ưu hóa việc đếm bằng cách dùng truy vấn đếm trực tiếp
             var rewards = await _context.Rewards
                 .Where(r => r.ProgramId == programId)
                 .OrderBy(r => r.Idd)
@@ -46,10 +50,11 @@ namespace lucky_draw.Controllers.Api
         [HttpGet("winners")]
         public async Task<IActionResult> GetWinners()
         {
+            // Chỉ lấy top 100 người trúng mới nhất để tránh load quá nhiều
             var winners = await _context.CustomerReward
                 .Include(cr => cr.Reward)
-                .OrderBy(cr => cr.Reward.Idd)
-                .ThenByDescending(cr => cr.TimeStamp)
+                .OrderByDescending(cr => cr.TimeStamp)
+                .Take(100) 
                 .Select(cr => new
                 {
                     cr.Id,
@@ -76,29 +81,14 @@ namespace lucky_draw.Controllers.Api
                 return BadRequest("No more prizes available for this reward.");
             }
 
-            // Improved query to avoid 'Contains' which can cause issues on older SQL Servers (JSON translation)
-            var candidates = await _context.Customers
-                .Where(c => !_context.CustomerReward.Any(cr => cr.RewardId == request.RewardId && cr.CustomerId == c.Id))
-                .ToListAsync();
+            // Dùng service đã tối ưu cho DB lớn
+            var winner = await _drawService.RandomSequentialAsync(request.RewardId);
 
-            if (candidates.Count == 0)
+            if (winner == null)
                 return BadRequest("No candidates left.");
 
-            var rnd = new Random();
-            var winner = candidates[rnd.Next(candidates.Count)];
-
-            var result = new CustomerReward
-            {
-                ProgramId = reward.ProgramId,
-                RewardId = reward.Id,
-                CustomerId = winner.Id,
-                ResultCode = winner.CustomerCode,
-                TimeStamp = DateTime.Now,
-                NumberOfCustomer = 1
-            };
-
-            _context.CustomerReward.Add(result);
-            await _context.SaveChangesAsync();
+            // Lưu kết quả
+            await _drawService.SaveWinnerAsync(request.RewardId, winner);
 
             var info = await _context.CustomerInfos.FirstOrDefaultAsync(x => x.CustomerCode == winner.CustomerCode);
 
@@ -118,3 +108,4 @@ namespace lucky_draw.Controllers.Api
         public int RewardId { get; set; }
     }
 }
+

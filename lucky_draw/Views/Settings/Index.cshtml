@@ -1,4 +1,4 @@
-﻿@model (IEnumerable<lucky_draw.Models.LuckyProgram> Programs, IEnumerable<lucky_draw.Models.Reward> Rewards, IEnumerable<lucky_draw.Models.RewardType> RewardTypes)
+@model (IEnumerable<lucky_draw.Models.LuckyProgram> Programs, IEnumerable<lucky_draw.Models.Reward> Rewards, IEnumerable<lucky_draw.Models.RewardType> RewardTypes)
 @{
     Layout = null;
     ViewBag.Title = "Cấu hình hệ thống Quay số";
@@ -10,6 +10,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TDbank - Cấu hình hệ thống</title>
+    <link rel="icon" type="image/png" href="~/img/luckydrawicon.png">
     <!-- Local Assets -->
     <script src="~/lib/tailwind/tailwindcss.js"></script>
     <script src="~/lib/sortablejs/sortable.min.js"></script>
@@ -156,8 +157,8 @@
 <body>
     <header class="settings-header flex justify-between items-center mb-8">
         <div class="flex items-center gap-4">
-            <div class="bg-red-700 text-white p-2 rounded-lg">
-                <i class="bi bi-gear-fill text-2xl"></i>
+            <div class="p-1">
+                <img src="~/img/luckydrawicon.png" alt="Icon" class="h-12">
             </div>
             <div>
                 <div class="text-xs font-bold uppercase tracking-tight text-gray-500">QUẢN TRỊ HỆ THỐNG</div>
