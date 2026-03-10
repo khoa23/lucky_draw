@@ -1,0 +1,11 @@
+﻿@{
+    ViewBag.Title = "Import từ Excel";
+}
+<h2>Import dữ liệu khách hàng từ Excel</h2>
+<form asp-action="ImportExcel" enctype="multipart/form-data" method="post">
+    <input type="file" name="file" />
+    <button type="submit">Upload</button>
+</form>
+@if(ViewBag.Message != null) {
+    <div class="alert alert-success">@ViewBag.Message</div>
+}

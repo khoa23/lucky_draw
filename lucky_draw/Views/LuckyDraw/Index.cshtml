@@ -1,0 +1,564 @@
+﻿@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chương trình quay số may mắn</title>
+    <!-- Local Assets -->
+    <script src="~/lib/tailwind/tailwindcss.js"></script>
+    <script src="~/lib/vue/vue.global.js"></script>
+    <script src="~/lib/axios/axios.min.js"></script>
+    <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
+
+    <style>
+        @@font-face {
+            font-family: 'Orbitron';
+            src: url('/lib/fonts/orbitron/orbitron.ttf') format('truetype');
+        }
+
+        @@font-face {
+            font-family: 'Roboto';
+            src: url('/lib/fonts/roboto/roboto.ttf') format('truetype');
+        }
+
+        :root {
+            --agri-red: #c0262d;
+            --agri-gold: #fef08a;
+            --agri-dark: #800000;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: radial-gradient(circle at center, #c0262d 0%, #800000 100%);
+            color: white;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        #app {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .agribank-header {
+            background: white;
+            color: var(--agri-red);
+            padding: 0.8rem 2rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border-bottom: 4px solid var(--agri-gold);
+        }
+
+        .prize-tabs-container {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .prize-tab {
+            background: transparent;
+            border: 2px solid var(--agri-gold);
+            color: var(--agri-gold);
+            padding: 8px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.2s ease;
+            min-width: 150px;
+            text-align: center;
+        }
+
+        .prize-tab:hover {
+            background: rgba(254, 240, 138, 0.1);
+        }
+
+        .prize-tab.active {
+            background: var(--agri-gold);
+            color: var(--agri-red);
+            box-shadow: 0 0 15px rgba(254, 240, 138, 0.4);
+        }
+
+        .main-stage {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+
+        .led-screen {
+            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+            border: 12px solid #ca8a04;
+            border-radius: 15px;
+            padding: 50px 20px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            position: relative;
+        }
+
+        .lucky-numbers {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 40px 0;
+        }
+
+        .digit-box {
+            background: white;
+            color: #d32f2f;
+            width: 75px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4.5rem;
+            font-weight: 900;
+            border-radius: 6px;
+            box-shadow: 0 6px 0 #999, inset 0 0 15px rgba(0, 0, 0, 0.1);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .winner-panel {
+            background: #fef08a;
+            /* Agribank Gold */
+            color: #1e3a8a;
+            /* Blue text like in photo */
+            max-width: 800px;
+            margin: 40px auto 0;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: left;
+            box-shadow: 20px 20px 0px rgba(30, 58, 138, 0.2);
+            position: relative;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @@keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .spin-button {
+            background: var(--agri-gold);
+            color: var(--agri-red);
+            font-size: 1.8rem;
+            font-weight: 900;
+            padding: 15px 60px;
+            border-radius: 50px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #ca8a04;
+            transition: all 0.1s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .spin-button:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #ca8a04;
+        }
+
+        .spin-button:disabled {
+            background: #a1a1aa;
+            box-shadow: 0 8px 0 #71717a;
+            cursor: not-allowed;
+            color: #52525b;
+        }
+
+        .scrolling {
+            animation: scrollDigit 0.05s infinite;
+        }
+
+        @@keyframes scrollDigit {
+            0% {
+                transform: translateY(-3px);
+            }
+
+            50% {
+                transform: translateY(3px);
+            }
+
+            100% {
+                transform: translateY(-3px);
+            }
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .winners-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            color: white;
+        }
+
+        .winners-table th {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            text-align: left;
+            border-bottom: 2px solid var(--agri-gold);
+        }
+
+        .winners-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .error-overlay {
+            background: rgba(0, 0, 0, 0.85);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            backdrop-filter: blur(8px);
+        }
+
+        .error-card {
+            background: white;
+            color: #d32f2f;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            border-top: 10px solid #ca8a04;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <!-- Global Error Notification Overlay -->
+        <div v-if="errorMessage" class="error-overlay animate__animated animate__fadeIn">
+            <div class="error-card animate__animated animate__zoomIn">
+                <div class="text-5xl mb-6">⚠️</div>
+                <h3 class="text-2xl font-black uppercase mb-3 tracking-tight">Thông báo hệ thống</h3>
+                <p class="text-gray-700 text-lg mb-8 leading-relaxed">
+                    {{ errorMessage === 'No candidates left.' ? 'Đã hết lượt quay cho giải thưởng này!' : errorMessage
+                    }}
+                </p>
+                <button @@click="errorMessage = null"
+                    class="bg-red-700 text-white px-12 py-3 rounded-full font-black hover:bg-red-800 transition-all transform hover:scale-105 shadow-lg">
+                    ĐÓNG THÔNG BÁO
+                </button>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header class="agribank-header flex justify-between items-center">
+            <div class="flex items-center gap-6">
+                <img src="" alt="TDbank" class="h-12">
+                <div class="border-l-2 border-red-600 pl-6">
+                    <div class="text-xs font-bold uppercase tracking-tight">Ngân hàng Thanh Đa</div>
+                    <div class="text-xl font-black text-red-700">Hội sở</div>
+                </div>
+            </div>
+            <div class="flex gap-4 items-center">
+                <span class="text-red-700 font-bold uppercase text-sm">Chương trình:</span>
+                <select v-model="selectedProgram" @@change="fetchPrizes"
+                    class="bg-red-50 border-2 border-red-200 text-red-800 font-extrabold rounded-lg px-4 py-2 outline-none focus:border-red-500">
+                    <option v-for="p in programs" :key="p.id" :value="p.id">{{ p.programName }}</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- Prize Tabs -->
+        <div class="prize-tabs-container no-scrollbar">
+            <button v-for="reward in prizes" :key="reward.id" @@click="selectPrize(reward)"
+                :class="{'active': activeTab === 'draw' && selectedReward?.id === reward.id}" class="prize-tab">
+                {{ reward.rewardName }}
+            </button>
+            <button @@click="activeTab = 'winners'; fetchWinners();" :class="{'active': activeTab === 'winners'}"
+                class="prize-tab">
+                DANH SÁCH TRÚNG GIẢI
+            </button>
+        </div>
+
+        <main class="main-stage">
+            <!-- Drawing View -->
+            <div v-if="activeTab === 'draw'" class="animate__animated animate__fadeIn">
+                <h2
+                    class="text-3xl md:text-5xl font-black text-center text-yellow-300 mb-2 uppercase tracking-tighter drop-shadow-lg">
+                    LỄ QUAY THƯỞNG
+                </h2>
+                <p class="text-center text-white italic text-xl mb-10 opacity-90">"{{ selectedProgramName }}"</p>
+
+                <div v-if="selectedReward" class="led-screen text-center">
+
+                    <div class="lucky-numbers">
+                        <div v-for="(digit, index) in codeDigits" :key="index" class="digit-box"
+                            :class="{'scrolling': isSpinning}">
+                            {{ digit }}
+                        </div>
+                    </div>
+
+                    <div v-if="lastWinner"
+                        class="text-yellow-200 font-black text-2xl uppercase tracking-widest mb-4 drop-shadow-md">
+                        CHÚC MỪNG KHÁCH HÀNG ĐÃ TRÚNG THƯỞNG {{ selectedReward.rewardName }}
+                    </div>
+                    <div v-else class="text-white/80 mb-6 text-lg">
+                        Loại giải: <span class="text-yellow-300 font-bold uppercase text-xl">{{
+                            selectedReward.rewardName }}</span> |
+                        Còn lại: <span class="text-yellow-300 font-bold text-xl">{{ selectedReward.remaining }}</span> /
+                        {{ selectedReward.numberOfReward }}
+                    </div>
+
+                    <div class="mt-8">
+                        <button @@click="startSpin" :disabled="isSpinning || selectedReward.remaining <= 0"
+                            class="spin-button">
+                            {{ isSpinning ? 'Đang quay...' : 'QUAY SỐ' }}
+                        </button>
+                    </div>
+
+                    <!-- Winner Info Card (Agribank Style) -->
+                    <div v-if="lastWinner" class="winner-panel">
+                        <div class="text-blue-900 border-b-2 border-blue-900/20 pb-3 mb-4 font-black tracking-wider">
+                            THÔNG TIN KHÁCH HÀNG TRÚNG THƯỞNG
+                        </div>
+                        <div class="space-y-4 text-xl">
+                            <div class="flex gap-2">Mã khách hàng: <span
+                                    class="font-black font-orbitron tracking-wider">{{ lastWinner.customerCode }}</span>
+                            </div>
+                            <div class="flex gap-2">Tên khách hàng: <span class="font-black uppercase">{{
+                                    lastWinner.name }}</span></div>
+                            <div v-if="lastWinner.idNo" class="flex gap-2 text-sm opacity-80 mt-4 italic">
+                                Chúc mừng quý khách đã may mắn nhận được giải thưởng từ TDbank.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-else class="text-center py-40 opacity-50">
+                    <div class="text-4xl font-black text-yellow-300 mb-4 uppercase">CHÀO MỪNG QUÝ KHÁCH</div>
+                    <p class="text-xl">Vui lòng chọn một hạng mục giải thưởng phía trên để bắt đầu.</p>
+                </div>
+            </div>
+
+            <!-- Winners View -->
+            <div v-if="activeTab === 'winners'" class="animate__animated animate__fadeIn">
+                <div class="bg-black/30 p-8 rounded-xl border border-white/10 backdrop-blur-lg">
+                    <div class="flex justify-between items-center mb-8">
+                        <h2 class="text-3xl font-black text-yellow-300 uppercase">DANH SÁCH KHÁCH HÀNG TRÚNG THƯỞNG</h2>
+                        <button @@click="activeTab = 'draw'"
+                            class="text-white bg-white/20 px-4 py-2 rounded hover:bg-white/30 transition-colors">Quay
+                            lại</button>
+                    </div>
+
+                    <div v-if="winnersList.length === 0" class="text-center py-20 opacity-50">
+                        Chưa có dữ liệu người trúng giải.
+                    </div>
+
+                    <div v-else class="space-y-10">
+                        <div v-for="group in groupedWinners" :key="group.rewardId">
+                            <h3
+                                class="text-yellow-300 font-black text-xl mb-4 border-l-4 border-yellow-300 pl-4 uppercase">
+                                {{ group.rewardName }}</h3>
+                            <div class="overflow-x-auto">
+                                <table class="winners-table">
+                                    <thead>
+                                        <tr>
+                                            <th>STT</th>
+                                            <th>Mã Khách Hàng</th>
+                                            <th>Tên Khách Hàng</th>
+                                            <th>Thời Gian</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(w, idx) in group.winners" :key="w.id">
+                                            <td>{{ idx + 1 }}</td>
+                                            <td class="font-bold text-yellow-200">{{ w.resultCode }}</td>
+                                            <td class="uppercase">{{ w.customerName }}</td>
+                                            <td class="text-sm opacity-60">{{ formatDate(w.timeStamp) }}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="mt-auto p-6 text-center text-white/40 text-xs border-t border-white/5 bg-black/10">
+            Hệ thống Quay số may mắn TDbank&bull; Phiên bản Offline
+        </footer>
+    </div>
+
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/luckyHub")
+            .withAutomaticReconnect()
+            .build();
+
+        connection.start().catch(err => console.error(err));
+        const { createApp, ref, computed, onMounted, watch } = Vue;
+
+        createApp({
+            setup() {
+                const activeTab = ref('draw');
+                const programs = ref([]);
+                const selectedProgram = ref(null);
+                const prizes = ref([]);
+                const selectedReward = ref(null);
+                const winnersList = ref([]);
+                const isSpinning = ref(false);
+                const codeDigits = ref(['?', '?', '?', '?', '?', '?', '?', '?', '?', '?']); // Matching photo length
+                const lastWinner = ref(null);
+                const errorMessage = ref(null);
+
+                const fetchPrograms = async () => {
+                    try {
+                        const response = await axios.get('/api/luckydrawapi/programs');
+                        programs.value = response.data;
+                        if (programs.value.length > 0) {
+                            selectedProgram.value = programs.value[0].id;
+                            fetchPrizes();
+                        }
+                    } catch (err) { console.error(err); }
+                };
+
+                const fetchPrizes = async () => {
+                    if (!selectedProgram.value) return;
+                    try {
+                        const response = await axios.get(`/api/luckydrawapi/prizes/${selectedProgram.value}`);
+                        prizes.value = response.data;
+                        if (selectedReward.value) {
+                            selectedReward.value = prizes.value.find(p => p.id === selectedReward.value.id) || null;
+                        }
+                    } catch (err) { console.error(err); }
+                };
+
+                const selectPrize = (reward) => {
+                    activeTab.value = 'draw';
+                    selectedReward.value = reward;
+                    lastWinner.value = null;
+                    errorMessage.value = null;
+                    // Reset digits
+                    codeDigits.value = Array(10).fill('?');
+                };
+
+                const fetchWinners = async () => {
+                    try {
+                        const response = await axios.get('/api/luckydrawapi/winners');
+                        winnersList.value = response.data;
+                    } catch (err) { console.error(err); }
+                };
+
+                const selectedProgramName = computed(() => {
+                    const prog = programs.value.find(p => p.id === selectedProgram.value);
+                    return prog ? prog.programName : '';
+                });
+
+                const groupedWinners = computed(() => {
+                    const groups = [];
+                    winnersList.value.forEach(w => {
+                        let group = groups.find(g => g.rewardId === w.rewardId);
+                        if (!group) {
+                            group = { rewardId: w.rewardId, rewardName: w.rewardName, winners: [] };
+                            groups.push(group);
+                        }
+                        group.winners.push(w);
+                    });
+                    return groups;
+                });
+
+                const startSpin = async () => {
+                    if (isSpinning.value || !selectedReward.value) return;
+
+                    isSpinning.value = true;
+                    lastWinner.value = null;
+                    // Removed spin-sound play logic
+
+                    const animationInterval = setInterval(() => {
+                        codeDigits.value = codeDigits.value.map(() => Math.floor(Math.random() * 10));
+                    }, 50);
+
+                    try {
+                        const response = await axios.post('/api/luckydrawapi/spin', {
+                            rewardId: selectedReward.value.id
+                        });
+
+                        const winnerData = response.data;
+
+                        setTimeout(() => {
+                            clearInterval(animationInterval);
+                            const code = winnerData.customerCode.toString();
+                            const paddedCode = code.padStart(codeDigits.value.length, '0');
+                            codeDigits.value = paddedCode.split('');
+
+                            lastWinner.value = winnerData;
+                            isSpinning.value = false;
+
+                            const winAudio = document.getElementById('win-sound');
+                            if (winAudio) winAudio.play();
+
+                            fetchPrizes();
+                        }, 3000);
+
+                    } catch (err) {
+                        clearInterval(animationInterval);
+                        isSpinning.value = false;
+                        codeDigits.value = Array(10).fill('?');
+                        errorMessage.value = err.response?.data || "Lỗi hệ thống khi quay số.";
+                    }
+                };
+
+                const formatDate = (dateStr) => {
+                    const date = new Date(dateStr);
+                    return date.toLocaleString('vi-VN');
+                };
+
+                onMounted(fetchPrograms);
+
+                // SignalR logic - Move to end of setup to ensure refs are defined
+                connection.on("ReceiveSpinCommand", () => {
+                    if (activeTab.value === 'draw' && selectedReward.value && !isSpinning.value) {
+                        startSpin();
+                    }
+                });
+
+                watch(isSpinning, (newVal) => {
+                    connection.invoke("SendStatus", newVal ? "spinning" : "ready").catch(err => console.error(err));
+                });
+
+                return {
+                    activeTab, programs, selectedProgram, prizes, selectedReward,
+                    winnersList, groupedWinners, isSpinning, codeDigits, lastWinner,
+                    fetchPrizes, fetchWinners, startSpin, formatDate, selectPrize,
+                    selectedProgramName, errorMessage
+                };
+            }
+        }).mount('#app');
+    </script>
+
+    <!-- Preload sounds -->
+    <audio id="spin-sound" src="~/lib/spin-sound.mp3" preload="auto"></audio>
+    <audio id="win-sound" src="~/lib/win-sound.mp3" preload="auto"></audio>
+</body>
+
+</html>

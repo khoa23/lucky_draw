@@ -1,0 +1,212 @@
+﻿@model IEnumerable<lucky_draw.Models.CustomerReward>
+@{
+    Layout = null;
+    ViewBag.Title = "Báo cáo Kết quả Quay số";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDbank - Báo cáo kết quả</title>
+    <!-- Local Assets -->
+    <script src="~/lib/tailwind/tailwindcss.js"></script>
+    <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
+    
+    <style>
+        @@font-face {
+            font-family: 'Roboto';
+            src: url('/lib/fonts/roboto/roboto.ttf') format('truetype');
+        }
+
+        :root {
+            --agri-red: #c0262d;
+            --agri-gold: #fef08a;
+            --agri-dark: #800000;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+        }
+
+        .report-header {
+            background: white;
+            border-bottom: 4px solid var(--agri-red);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-agri {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+
+        .btn-export {
+            background: #10b981;
+            color: white;
+        }
+        .btn-export:hover {
+            background: #059669;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-delete-all {
+            background: #ef4444;
+            color: white;
+        }
+        .btn-delete-all:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+        }
+
+        .table-agri {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-agri th {
+            background: #f8fafc;
+            padding: 1rem;
+            text-align: left;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .table-agri td {
+            padding: 1rem;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.95rem;
+        }
+
+        .table-agri tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge-reward {
+            background: #fef9c3;
+            color: #854d0e;
+            padding: 4px 12px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.75rem;
+            border: 1px solid #fde047;
+        }
+    </style>
+</head>
+<body>
+    <header class="report-header p-4 px-8 flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <div class="bg-red-700 text-white p-2 rounded-lg">
+                <i class="bi bi-file-earmark-bar-graph-fill text-2xl"></i>
+            </div>
+            <div>
+                <div class="text-xs font-bold uppercase tracking-tight text-gray-500">Hệ thống báo cáo</div>
+                <div class="text-xl font-black text-red-700 uppercase">DANH SÁCH KHÁCH HÀNG TRÚNG THƯỞNG</div>
+            </div>
+        </div>
+        <div class="flex gap-4">
+            <a href="/LuckyDraw" class="flex items-center gap-2 text-gray-600 hover:text-red-700 font-bold transition-colors">
+                <i class="bi bi-display"></i> Trang quay số
+            </a>
+            <a href="/Settings" class="flex items-center gap-2 text-gray-600 hover:text-red-700 font-bold transition-colors">
+                <i class="bi bi-gear"></i> Cài đặt
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-8 animate__animated animate__fadeIn">
+        
+        <div class="flex justify-between items-center mb-8">
+            <div class="text-slate-500">
+                Tìm thấy <strong>@Model.Count()</strong> khách hàng may mắn
+            </div>
+            <div class="flex gap-4">
+                <a href="@Url.Action("ExportToExcel", "Report")" class="btn-agri btn-export">
+                    <i class="bi bi-file-earmark-excel-fill"></i> Xuất file Excel
+                </a>
+                <form asp-action="DeleteAll" method="post" onsubmit="return confirm('CẢNH BÁO: Hành động này sẽ xóa toàn bộ lịch sử trúng giải! Bạn có chắc chắn?');">
+                    <button type="submit" class="btn-agri btn-delete-all">
+                        <i class="bi bi-trash3-fill"></i> Xóa tất cả dữ liệu
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card bg-white">
+            <div class="overflow-x-auto">
+                <table class="table-agri">
+                    <thead>
+                        <tr>
+                            <th class="w-16">STT</th>
+                            <th>Giải thưởng</th>
+                            <th>Mã Khách Hàng</th>
+                            <th>Họ và Tên</th>
+                            <th>Kết quả Quay</th>
+                            <th>Thời gian trúng</th>
+                            <th class="w-24 text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{ int i = 1; }
+                        @foreach (var item in Model) {
+                            <tr class="transition-colors">
+                                <td class="text-slate-400 font-mono">@(i++)</td>
+                                <td><span class="badge-reward">@item.Reward?.RewardName</span></td>
+                                <td class="font-bold text-slate-800">@item.Customer?.CustomerCode</td>
+                                <td class="uppercase font-bold text-red-700">@item.Customer?.Name</td>
+                                <td class="font-mono font-bold text-blue-800">@item.ResultCode</td>
+                                <td class="text-slate-500 text-sm">@item.TimeStamp?.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                                <td class="text-center">
+                                    <form asp-action="Delete" method="post" onsubmit="return confirm('Xóa kết quả này?');" class="inline">
+                                        <input type="hidden" name="id" value="@item.Id" />
+                                        <button type="submit" class="text-red-400 hover:text-red-700 p-2 transition-colors">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        @if (!Model.Any()) {
+                            <tr>
+                                <td colspan="7" class="text-center py-20 text-slate-400 italic">
+                                    Chưa có dữ liệu khách hàng trúng thưởng.
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <footer class="p-8 text-center text-slate-400 text-xs">
+        &copy; 2026 TDbank Lottery Management System &bull; Dữ liệu báo cáo được cập nhật thời gian thực.
+    </footer>
+</body>
+</html>

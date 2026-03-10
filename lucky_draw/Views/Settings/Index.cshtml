@@ -1,0 +1,373 @@
+﻿@model (IEnumerable<lucky_draw.Models.LuckyProgram> Programs, IEnumerable<lucky_draw.Models.Reward> Rewards, IEnumerable<lucky_draw.Models.RewardType> RewardTypes)
+@{
+    Layout = null;
+    ViewBag.Title = "Cấu hình hệ thống Quay số";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDbank - Cấu hình hệ thống</title>
+    <!-- Local Assets -->
+    <script src="~/lib/tailwind/tailwindcss.js"></script>
+    <script src="~/lib/sortablejs/sortable.min.js"></script>
+    <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
+    
+    <style>
+        @@font-face {
+            font-family: 'Roboto';
+            src: url('/lib/fonts/roboto/roboto.ttf') format('truetype');
+        }
+
+        :root {
+            --agri-red: #c0262d;
+            --agri-gold: #fef08a;
+            --agri-dark: #800000;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .settings-header {
+            background: white;
+            color: var(--agri-red);
+            padding: 1rem 2rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            border-bottom: 4px solid var(--agri-red);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+        }
+
+        .input-agri {
+            border: 1px solid #e2e8f0;
+            padding: 0.4rem 0.6rem;
+            border-radius: 6px;
+            outline: none;
+            transition: all 0.2s;
+            width: 100%;
+            font-size: 0.9rem;
+        }
+
+        .input-agri:focus {
+            border-color: var(--agri-red);
+            box-shadow: 0 0 0 3px rgba(192, 38, 45, 0.1);
+        }
+
+        .btn-save {
+            background: #10b981;
+            color: white;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-save:hover {
+            background: #059669;
+            transform: translateY(-1px);
+        }
+
+        .btn-delete {
+            color: #ef4444;
+            padding: 0.4rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-delete:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .table-agri {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-agri th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            background: #f8fafc;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .table-agri td {
+            padding: 0.75rem 1rem;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .add-row {
+            background: #f0fdf4;
+            border-top: 2px solid #bcf0da;
+        }
+
+        .handle {
+            cursor: grab;
+            color: #cbd5e1;
+        }
+        .handle:active {
+            cursor: grabbing;
+        }
+        .sortable-ghost {
+            opacity: 0.4;
+            background: #bfdbfe !important;
+        }
+
+        #order-toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 10000;
+        }
+    </style>
+</head>
+<body>
+    <header class="settings-header flex justify-between items-center mb-8">
+        <div class="flex items-center gap-4">
+            <div class="bg-red-700 text-white p-2 rounded-lg">
+                <i class="bi bi-gear-fill text-2xl"></i>
+            </div>
+            <div>
+                <div class="text-xs font-bold uppercase tracking-tight text-gray-500">QUẢN TRỊ HỆ THỐNG</div>
+                <div class="text-xl font-black text-red-700 uppercase">Cấu hình Quay số TDbank</div>
+            </div>
+        </div>
+        <div class="flex gap-4">
+            <a href="/LuckyDraw" class="flex items-center gap-2 text-gray-600 hover:text-red-700 font-bold transition-colors">
+                <i class="bi bi-display"></i> Trở về trang quay số
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-[1400px] mx-auto px-6 pb-20">
+        <div class="grid grid-cols-1 gap-10">
+            
+            <!-- Section: Programs -->
+            <section class="animate__animated animate__fadeIn">
+                <h2 class="text-2xl font-black text-slate-800 flex items-center gap-2 mb-4">
+                    <i class="bi bi-calendar-event text-red-600"></i> Quản lý Chương trình
+                </h2>
+                <div class="card overflow-x-auto">
+                    <table class="table-agri">
+                        <thead>
+                            <tr>
+                                <th style="width: 35%">Tên chương trình</th>
+                                <th style="width: 20%">Ngày bắt đầu</th>
+                                <th style="width: 20%">Trạng thái</th>
+                                <th style="width: 25%">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Programs) {
+                                <tr>
+                                    <td>
+                                        <form action="@Url.Action("UpdateProgram", "Settings")" method="post" id="form-prog-@item.Id">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <input type="text" name="name" value="@item.ProgramName" class="input-agri font-bold" />
+                                        </form>
+                                    </td>
+                                    <td>
+                                        <input type="date" name="dateStart" value="@(item.DateStart?.ToString("yyyy-MM-dd"))" class="input-agri" form="form-prog-@item.Id" />
+                                    </td>
+                                    <td><span class="text-green-600 font-bold"><i class="bi bi-check-circle-fill"></i> Hoạt động</span></td>
+                                    <td>
+                                        <button type="submit" form="form-prog-@item.Id" class="btn-save">
+                                            <i class="bi bi-save-fill"></i> Lưu thay đổi
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Section: Rewards -->
+            <section class="animate__animated animate__fadeInUp" style="animation-delay: 0.1s">
+                <div class="flex justify-between items-end mb-4">
+                    <h2 class="text-2xl font-black text-slate-800 flex items-center gap-2">
+                        <i class="bi bi-trophy text-yellow-600"></i> Cơ cấu Giải thưởng 
+                        <span class="text-xs font-normal text-slate-400 ml-2 italic">(Kéo thả <i class="bi bi-grip-vertical"></i> để sắp xếp thứ tự hiển thị)</span>
+                    </h2>
+                </div>
+                <div class="card overflow-x-auto">
+                    <table class="table-agri">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px"></th>
+                                <th style="width: 25%">Tên giải thưởng</th>
+                                <th style="width: 8%">SL giải</th>
+                                <th style="width: 15%">Loại giải</th>
+                                <th style="width: 8%">Độ dài số</th>
+                                <th style="width: 20%">Chương trình</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rewards-body">
+                            @foreach (var r in Model.Rewards) {
+                                <tr data-id="@r.Id" class="reward-row bg-white hover:bg-slate-50 transition-colors">
+                                    <td class="handle text-center"><i class="bi bi-grip-vertical text-xl"></i></td>
+                                    <form action="@Url.Action("UpdateReward", "Settings")" method="post" id="form-rew-@r.Id">
+                                        <input type="hidden" name="id" value="@r.Id" />
+                                        <td>
+                                            <input type="text" name="name" value="@r.RewardName" class="input-agri font-bold" />
+                                        </td>
+                                        <td>
+                                            <input type="number" name="quantity" value="@r.NumberOfReward" class="input-agri text-center" />
+                                        </td>
+                                        <td>
+                                            <select name="rewardType" class="input-agri">
+                                                <option value="">-- Chọn --</option>
+                                                @foreach (var type in Model.RewardTypes) {
+                                                    <option value="@type.Id" selected="@(r.RewardType == type.Id)">@type.Name</option>
+                                                }
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <input type="number" name="numberLength" value="@r.NumberLength" class="input-agri text-center" />
+                                        </td>
+                                        <td class="text-slate-500 font-medium text-sm">
+                                            @r.Program?.ProgramName
+                                        </td>
+                                        <td class="flex items-center gap-2">
+                                            <button type="submit" class="btn-save">
+                                                <i class="bi bi-save-fill"></i> Lưu
+                                            </button>
+                                            <form action="@Url.Action("DeleteReward", "Settings")" method="post" onsubmit="return confirm('Xóa giải thưởng này?');" class="inline">
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button type="submit" class="btn-delete" title="Xóa giải">
+                                                    <i class="bi bi-trash3-fill"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </form>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot>
+                            <!-- Add New Reward Row -->
+                            <tr class="add-row">
+                                <td></td>
+                                <form action="@Url.Action("AddReward", "Settings")" method="post">
+                                    <td>
+                                        <input type="text" name="name" placeholder="Tên giải mới..." class="input-agri border-green-200" required />
+                                    </td>
+                                    <td>
+                                        <input type="number" name="quantity" value="1" min="1" class="input-agri border-green-200" required />
+                                    </td>
+                                    <td>
+                                        <select name="rewardType" class="input-agri border-green-200">
+                                            <option value="">-- Loại giải --</option>
+                                            @foreach (var type in Model.RewardTypes) {
+                                                <option value="@type.Id">@type.Name</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" name="numberLength" value="10" class="input-agri border-green-200" />
+                                    </td>
+                                    <td>
+                                        <select name="programId" class="input-agri border-green-200" required>
+                                            @foreach (var p in Model.Programs) {
+                                                <option value="@p.Id">@p.ProgramName</option>
+                                            }
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-green-700 flex items-center gap-2 w-full justify-center">
+                                            <i class="bi bi-plus-circle-fill"></i> THÊM MỚI
+                                        </button>
+                                    </td>
+                                </form>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="p-6 text-center text-slate-400 text-xs mt-auto bg-slate-100 border-t border-slate-200">
+        &copy; 2026 TDbank Lottery Management System &bull; Kéo thả <i class="bi bi-grip-vertical"></i> để sắp xếp thứ tự hiển thị của các giải thưởng.
+    </footer>
+
+    <div id="order-toast" class="animate__animated">
+        <i class="bi bi-check-circle-fill"></i> Đã cập nhật thứ tự thành công!
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var el = document.getElementById('rewards-body');
+            var sortable = Sortable.create(el, {
+                handle: '.handle',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: function() {
+                    var ids = [];
+                    el.querySelectorAll('tr.reward-row').forEach(function(tr) {
+                        ids.push(parseInt(tr.getAttribute('data-id')));
+                    });
+                    
+                    fetch('@Url.Action("ReorderRewards", "Settings")', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(ids)
+                    }).then(response => {
+                        if (response.ok) {
+                            const toast = document.getElementById('order-toast');
+                            toast.style.display = 'block';
+                            toast.classList.add('animate__fadeInUp');
+                            setTimeout(() => {
+                                toast.classList.replace('animate__fadeInUp', 'animate__fadeOutDown');
+                                setTimeout(() => {
+                                    toast.style.display = 'none';
+                                    toast.classList.remove('animate__fadeOutDown');
+                                }, 500);
+                            }, 2000);
+                        } else {
+                            alert("Lỗi khi lưu thứ tự: " + response.statusText);
+                        }
+                    }).catch(err => {
+                        console.error('Network Error:', err);
+                        alert("Lỗi kết nối mạng khi lưu thứ tự. Vui lòng kiểm tra console trình duyệt.");
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

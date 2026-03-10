@@ -1,0 +1,140 @@
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>TDbank - Điều khiển từ xa</title>
+    <script src="~/lib/tailwind/tailwindcss.js"></script>
+    <script src="~/lib/signalr/signalr.min.js"></script>
+    <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
+    <style>
+        body {
+            background: #c0262d;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        .remote-btn {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: white;
+            color: #c0262d;
+            border: 10px solid rgba(255, 255, 255, 0.3);
+            font-size: 2rem;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .remote-btn:active {
+            transform: scale(0.9) translateY(10px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            background: #fef08a;
+        }
+
+        .remote-btn:disabled {
+            background: #9ca3af;
+            color: #4b5563;
+            cursor: default;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        .status-online { background: #4ade80; }
+        .status-offline { background: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="text-center mb-12">
+        <div class="text-xs font-bold opacity-70 uppercase mb-2">TDbank Offline Lottery</div>
+        <h1 class="text-3xl font-black italic">REMOTE CONTROL</h1>
+        <div id="connection-status" class="mt-4 text-sm font-bold bg-black/20 px-4 py-1 rounded-full inline-block">
+            <span class="status-dot status-offline"></span> Đang kết nối...
+        </div>
+    </div>
+
+    <button id="spinBtn" class="remote-btn" disabled>
+        QUAY SỐ
+    </button>
+
+    <div class="mt-16 text-center px-10">
+        <p id="msg" class="text-lg font-bold text-yellow-200 animate__animated h-8"></p>
+        <p class="text-xs opacity-50 mt-10 italic">Vui lòng đảm bảo trang quay số trên máy tính đang mở.</p>
+    </div>
+
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/luckyHub")
+            .withAutomaticReconnect()
+            .build();
+
+        const spinBtn = document.getElementById("spinBtn");
+        const statusEl = document.getElementById("connection-status");
+        const msgEl = document.getElementById("msg");
+
+        connection.on("ReceiveStatus", (status) => {
+            if (status === "spinning") {
+                spinBtn.disabled = true;
+                msgEl.innerText = "ĐANG QUAY...";
+                msgEl.className = "text-lg font-bold text-yellow-200 animate__animated animate__pulse animate__infinite";
+            } else if (status === "ready") {
+                spinBtn.disabled = false;
+                msgEl.innerText = "SẴN SÀNG";
+                msgEl.className = "text-lg font-bold text-green-300 animate__animated animate__fadeIn";
+            }
+        });
+
+        spinBtn.addEventListener("click", () => {
+            connection.invoke("TriggerSpin").catch(err => console.error(err));
+            // Feedback immediately
+            spinBtn.disabled = true;
+        });
+
+        async function start() {
+            try {
+                await connection.start();
+                console.log("SignalR Connected.");
+                statusEl.innerHTML = '<span class="status-dot status-online"></span> ĐÃ KẾT NỐI';
+                spinBtn.disabled = false;
+                msgEl.innerText = "ĐÃ SẴN SÀNG";
+            } catch (err) {
+                console.log(err);
+                setTimeout(start, 5000);
+            }
+        };
+
+        connection.onclose(async () => {
+            statusEl.innerHTML = '<span class="status-dot status-offline"></span> MẤT KẾT NỐI';
+            spinBtn.disabled = true;
+            await start();
+        });
+
+        start();
+    </script>
+</body>
+</html>

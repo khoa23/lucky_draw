@@ -1,0 +1,54 @@
+[
+  {
+    "ContainingType": "lucky_draw.Controllers.Api.LuckyDrawApiController",
+    "Method": "GetPrizes",
+    "RelativePath": "api/LuckyDrawApi/prizes/{programId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "programId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "lucky_draw.Controllers.Api.LuckyDrawApiController",
+    "Method": "GetPrograms",
+    "RelativePath": "api/LuckyDrawApi/programs",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "lucky_draw.Controllers.Api.LuckyDrawApiController",
+    "Method": "Spin",
+    "RelativePath": "api/LuckyDrawApi/spin",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "lucky_draw.Controllers.Api.SpinRequest",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "lucky_draw.Controllers.Api.LuckyDrawApiController",
+    "Method": "GetWinners",
+    "RelativePath": "api/LuckyDrawApi/winners",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  }
+]
