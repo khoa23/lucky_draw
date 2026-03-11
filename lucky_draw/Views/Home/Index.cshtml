@@ -5,6 +5,7 @@
 
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,32 +21,42 @@
             min-height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
         .card-menu {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 1px solid rgba(0,0,0,0.05);
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
+
         .card-menu:hover {
             transform: translateY(-10px);
             box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             border-color: #c0262d;
         }
-        .bg-agri { background-color: #c0262d; }
-        .text-agri { color: #c0262d; }
+
+        .bg-agri {
+            background-color: #c0262d;
+        }
+
+        .text-agri {
+            color: #c0262d;
+        }
     </style>
 </head>
+
 <body class="bg-gray-100">
     <nav class="bg-white shadow-md border-b-4 border-yellow-400">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-20">
                 <div class="flex items-center">
                     <div class="flex-shrink-0 flex items-center gap-3">
-                         <div class="p-1">
+                        <div class="p-1">
                             <img src="~/img/luckydrawicon.png" alt="Icon" class="h-12 w-12 object-contain">
-                         </div>
-                         <div>
-                             <h1 class="text-2xl font-black text-agri tracking-tighter">LUCKY DRAW</h1>
-                             <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">Management System</p>
-                         </div>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-black text-agri tracking-tighter">LUCKY DRAW</h1>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">
+                                Management System</p>
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-center gap-4">
@@ -73,8 +84,10 @@
 
         <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3 animate__animated animate__fadeInUp">
             <!-- Quay số -->
-            <a href="/LuckyDraw" class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
-                <div class="h-20 w-20 bg-red-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-agri transition-colors">
+            <a href="/LuckyDraw"
+                class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
+                <div
+                    class="h-20 w-20 bg-red-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-agri transition-colors">
                     <i class="bi bi-play-circle-fill text-agri text-4xl group-hover:text-white"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">Quay số may mắn</h3>
@@ -82,26 +95,34 @@
             </a>
 
             <!-- Remote -->
-            <a href="/Remote" class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
-                <div class="h-20 w-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
+            <a href="/Remote"
+                class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
+                <div
+                    class="h-20 w-20 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-blue-600 transition-colors">
                     <i class="bi bi-phone-vibrate text-blue-600 text-4xl group-hover:text-white"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">Điều khiển từ xa</h3>
-                <p class="text-gray-500 text-sm">Sử dụng điện thoại di động để kích hoạt lệnh quay số từ xa qua mạng nội bộ.</p>
+                <p class="text-gray-500 text-sm">Sử dụng điện thoại di động để kích hoạt lệnh quay số từ xa qua mạng nội
+                    bộ.</p>
             </a>
 
             <!-- Import -->
-            <a href="/Home/ImportExcel" class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
-                <div class="h-20 w-20 bg-green-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-green-600 transition-colors">
+            <a href="/Home/ImportExcel"
+                class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
+                <div
+                    class="h-20 w-20 bg-green-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-green-600 transition-colors">
                     <i class="bi bi-file-earmark-excel-fill text-green-600 text-4xl group-hover:text-white"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">Import Dữ liệu</h3>
-                <p class="text-gray-500 text-sm">Nạp danh sách khách hàng từ file Excel (Hỗ trợ dữ liệu lớn > 6 triệu dòng).</p>
+                <p class="text-gray-500 text-sm">Nạp danh sách khách hàng từ file Excel (Hỗ trợ dữ liệu lớn > 6 triệu
+                    dòng).</p>
             </a>
 
             <!-- Report -->
-            <a href="/Report" class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
-                <div class="h-20 w-20 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-purple-600 transition-colors">
+            <a href="/Report"
+                class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
+                <div
+                    class="h-20 w-20 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-purple-600 transition-colors">
                     <i class="bi bi-clipboard-data-fill text-purple-600 text-4xl group-hover:text-white"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">Báo cáo kết quả</h3>
@@ -109,16 +130,19 @@
             </a>
 
             <!-- Settings -->
-            <a href="/Settings" class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
-                <div class="h-20 w-20 bg-yellow-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-yellow-500 transition-colors">
+            <a href="/Settings"
+                class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
+                <div
+                    class="h-20 w-20 bg-yellow-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-yellow-500 transition-colors">
                     <i class="bi bi-gear-fill text-yellow-600 text-4xl group-hover:text-white"></i>
                 </div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">Cấu hình hệ thống</h3>
                 <p class="text-gray-500 text-sm">Cài đặt chương trình, hạng mục giải thưởng và thông tin ngân hàng.</p>
             </a>
-            
+
             <!-- Help -->
-            <div class="card-menu bg-gray-50 overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center opacity-60">
+            <div
+                class="card-menu bg-gray-50 overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center opacity-60">
                 <div class="h-20 w-20 bg-gray-200 rounded-2xl flex items-center justify-center mb-6">
                     <i class="bi bi-question-circle-fill text-gray-500 text-4xl"></i>
                 </div>
@@ -129,7 +153,8 @@
     </main>
 
     <footer class="max-w-7xl mx-auto py-12 px-4 border-t border-gray-200 text-center">
-        <p class="text-gray-400 text-sm font-medium">&copy; 2024 TDbank Management System. Optimize for Big Data.</p>
+        <p class="text-gray-400 text-sm font-medium">&copy; 2026 TDbank Management System. Optimize for Big Data.</p>
     </footer>
 </body>
+
 </html>

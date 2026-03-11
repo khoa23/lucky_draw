@@ -20,6 +20,9 @@ namespace lucky_draw.Services
         {
             System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
+            // Clear temptable first
+            await _context.Database.ExecuteSqlRawAsync("TRUNCATE TABLE temptable");
+
             using var reader = ExcelReaderFactory.CreateReader(excelStream);
             
             // Tạo DataTable để chứa dữ liệu tạm thời trước khi BulkCopy
@@ -35,7 +38,7 @@ namespace lucky_draw.Services
             dt.Columns.Add("CUSTSEQ");
             dt.Columns.Add("CARDNO");
 
-            var batchSize = 50000; // Mỗi đợt xử lý 50.000 dòng
+            var batchSize = 100000; // Tăng lên 100.000 dòng mỗi đợt
             var connectionString = _context.Database.GetConnectionString();
             if (string.IsNullOrEmpty(connectionString))
             {
@@ -71,6 +74,13 @@ namespace lucky_draw.Services
             {
                 await PerformBulkCopy(dt, connectionString);
             }
+
+            // Tăng timeout cho các procedure vì dữ liệu lớn
+            _context.Database.SetCommandTimeout(System.TimeSpan.FromMinutes(30));
+
+            // Chạy procedure sau khi import
+            await _context.Database.ExecuteSqlRawAsync("EXEC InsertCustomerInfoFromTempTable");
+            await _context.Database.ExecuteSqlRawAsync("EXEC importdataFromCustomerInfo");
         }
 
         private async Task PerformBulkCopy(DataTable dt, string connectionString)

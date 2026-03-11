@@ -1,11 +1,151 @@
-﻿@{
-    ViewBag.Title = "Import từ Excel";
+@{
+    Layout = null;
+    ViewBag.Title = "Import dữ liệu Excel";
 }
-<h2>Import dữ liệu khách hàng từ Excel</h2>
-<form asp-action="ImportExcel" enctype="multipart/form-data" method="post">
-    <input type="file" name="file" />
-    <button type="submit">Upload</button>
-</form>
-@if(ViewBag.Message != null) {
-    <div class="alert alert-success">@ViewBag.Message</div>
-}
+
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Import Dữ liệu - TDbank</title>
+    <!-- Local Assets -->
+    <script src="~/lib/tailwind/tailwindcss.js"></script>
+    <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
+    <style>
+        body {
+            background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .bg-agri {
+            background-color: #c0262d;
+        }
+
+        .text-agri {
+            color: #c0262d;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex flex-col">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md border-b-4 border-yellow-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-20">
+                <div class="flex items-center">
+                    <a href="/" class="flex-shrink-0 flex items-center gap-3">
+                        <div class="p-1">
+                            <img src="~/img/luckydrawicon.png" alt="Icon" class="h-12 w-12 object-contain">
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-black text-agri tracking-tighter uppercase">LUCKY DRAW</h1>
+                            <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none">
+                                Management System</p>
+                        </div>
+                    </a>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-sm font-bold text-gray-800">Administrator</p>
+                        <p class="text-xs text-gray-500">TDbank Local Session</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl animate__animated animate__zoomIn">
+            <div class="text-center">
+                <div class="mx-auto h-16 w-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
+                    <i class="bi bi-file-earmark-excel-fill text-green-600 text-3xl"></i>
+                </div>
+                <h2 class="text-3xl font-extrabold text-gray-900">Import Dữ liệu</h2>
+                <p class="mt-2 text-sm text-gray-500">Hệ thống nạp danh sách khách hàng từ file Excel</p>
+            </div>
+
+            <form asp-action="ImportExcel" enctype="multipart/form-data" method="post" class="mt-8 space-y-6">
+                <div class="rounded-md shadow-sm -space-y-px">
+                    <div class="flex items-center justify-center w-full">
+                        <label
+                            class="flex flex-col w-full h-32 border-4 border-dashed border-gray-200 hover:bg-gray-50 hover:border-agri group transition-all cursor-pointer rounded-xl">
+                            <div class="flex flex-col items-center justify-center pt-7">
+                                <i class="bi bi-cloud-arrow-up text-3xl text-gray-400 group-hover:text-agri"></i>
+                                <p class="pt-1 text-sm tracking-wider text-gray-400 group-hover:text-agri"
+                                    id="file-name">Chọn file .xlsx hoặc .xls</p>
+                            </div>
+                            <input type="file" name="file" class="hidden" accept=".xlsx, .xls" required
+                                onchange="updateFileName(this)" />
+                        </label>
+                    </div>
+                </div>
+
+                @if (ViewBag.Message != null)
+                {
+                    <div class="bg-green-50 border-l-4 border-green-400 p-4 animate__animated animate__fadeIn">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="bi bi-check-circle-fill text-green-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-green-700">@ViewBag.Message</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                @if (ViewBag.Error != null)
+                {
+                    <div class="bg-red-50 border-l-4 border-red-400 p-4 animate__animated animate__shakeX">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="bi bi-exclamation-triangle-fill text-red-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-red-700">@ViewBag.Error</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div>
+                    <button type="submit"
+                        class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-agri hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all shadow-lg active:scale-95">
+                        BẮT ĐẦU IMPORT
+                    </button>
+                </div>
+            </form>
+
+            <div class="mt-6 text-xs text-gray-400 text-center space-y-3">
+                <div class="flex items-center justify-center gap-2">
+                    <a href="/Home/DownloadTemplate"
+                        class="inline-flex items-center gap-1 text-agri font-bold hover:underline">
+                        <i class="bi bi-download"></i>
+                        Tải File Excel Mẫu
+                    </a>
+                </div>
+                <div class="space-y-1">
+                    <p>Mẹo: Đảm bảo file Excel có đúng cấu trúc 10 cột theo quy định.</p>
+                    <p>Quy trình: Truncate bảng tạm -> Nạp dữ liệu -> Chạy Procedure xử lý.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-6 text-center text-gray-400 text-xs">
+        &copy; 2026 TDbank Management System. High Performance Import Engine.
+    </footer>
+
+    <script>
+        function updateFileName(input) {
+            const fileName = input.files[0] ? input.files[0].name : "Chọn file .xlsx hoặc .xls";
+            document.getElementById('file-name').textContent = fileName;
+        }
+    </script>
+</body>
+
+</html>

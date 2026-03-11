@@ -3,90 +3,244 @@
 }
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>TDbank - Điều khiển từ xa</title>
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>TDbank Remote Control</title>
     <link rel="icon" type="image/png" href="~/img/luckydrawicon.png">
+
+    <!-- Local Assets -->
     <script src="~/lib/tailwind/tailwindcss.js"></script>
     <script src="~/lib/signalr/signalr.min.js"></script>
     <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
+
     <style>
+        :root {
+            --td-red: #c0262d;
+            --td-dark: #800000;
+            --td-gold: #fef08a;
+        }
+
         body {
-            background: #c0262d;
-            height: 100vh;
+            background: radial-gradient(circle at center, var(--td-red) 0%, var(--td-dark) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            margin: 0;
+            color: white;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism Effect */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 2rem;
+        }
+
+        /* Main Spin Button */
+        .spin-btn-container {
+            position: relative;
+            z-index: 10;
+        }
+
+        .remote-btn {
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: white;
+            color: var(--td-red);
+            border: 15px solid rgba(255, 255, 255, 0.2);
+            font-size: 2.5rem;
+            font-weight: 900;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-family: 'Segoe UI', sans-serif;
-            overflow: hidden;
-            color: white;
-        }
-
-        .remote-btn {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            background: white;
-            color: #c0262d;
-            border: 10px solid rgba(255, 255, 255, 0.3);
-            font-size: 2rem;
-            font-weight: 900;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.3);
-            transition: all 0.2s;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4),
+                inset 0 0 20px rgba(192, 38, 45, 0.1);
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .remote-btn::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+            transform: rotate(45deg);
+            transition: 0.5s;
+        }
+
+        .remote-btn:hover::after {
+            left: 100%;
         }
 
         .remote-btn:active {
-            transform: scale(0.9) translateY(10px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            background: #fef08a;
+            transform: scale(0.92) translateY(5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+            background: var(--td-gold);
         }
 
         .remote-btn:disabled {
-            background: #9ca3af;
-            color: #4b5563;
-            cursor: default;
+            background: rgba(255, 255, 255, 0.3);
+            color: rgba(255, 255, 255, 0.5);
+            border-color: rgba(255, 255, 255, 0.1);
+            cursor: not-allowed;
             transform: none;
             box-shadow: none;
         }
 
-        .status-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 8px;
+        /* Responsive adjustments */
+        @@media (max-width: 640px) {
+            .remote-btn {
+                width: 220px;
+                height: 220px;
+                font-size: 1.8rem;
+                border-width: 10px;
+            }
         }
-        .status-online { background: #4ade80; }
-        .status-offline { background: #94a3b8; }
+
+        /* Pulsing Glow Animation */
+        .btn-ready {
+            animation: pulse-glow 2s infinite;
+        }
+
+        @@keyframes pulse-glow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 30px rgba(255, 255, 255, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+            }
+        }
+
+        /* Status Indicator */
+        .status-badge {
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .dot-green {
+            background: #4ade80;
+            box-shadow: 0 0 10px #4ade80;
+        }
+
+        .dot-red {
+            background: #f87171;
+            box-shadow: 0 0 10px #f87171;
+        }
+
+        .dot-yellow {
+            background: #fbbf24;
+            box-shadow: 0 0 10px #fbbf24;
+        }
+
+        /* Icon Animation for Spinning */
+        .spin-icon {
+            display: none;
+        }
+
+        .spinning .spin-icon {
+            display: block;
+            animation: spin 1s infinite linear;
+        }
+
+        .spinning .btn-text {
+            display: none;
+        }
+
+        @@keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
-<body>
-    <div class="text-center mb-12">
-        <div class="text-xs font-bold opacity-70 uppercase mb-2">TDbank Offline Lottery</div>
-        <h1 class="text-3xl font-black italic">REMOTE CONTROL</h1>
-        <div id="connection-status" class="mt-4 text-sm font-bold bg-black/20 px-4 py-1 rounded-full inline-block">
-            <span class="status-dot status-offline"></span> Đang kết nối...
+
+<body class="safe-area-inset">
+
+    <!-- Header Section -->
+    <header class="p-6 md:p-10 flex flex-col items-center">
+        <a href="/" class="flex flex-col items-center gap-2 group transition-all">
+            <div class="p-2 glass-panel group-hover:bg-white/20 transition-all">
+                <img src="~/img/luckydrawicon.png" alt="Logo" class="h-12 w-12 md:h-16 md:w-16">
+            </div>
+            <div class="text-center mt-2">
+                <div
+                    class="text-[10px] md:text-xs font-bold text-td-gold uppercase tracking-[0.3em] opacity-80 leading-none">
+                    TDbank Lottery</div>
+                <h1 class="text-2xl md:text-3xl font-black italic tracking-tighter uppercase mt-1">Remote Control</h1>
+            </div>
+        </a>
+
+        <div id="connection-status" class="status-badge mt-6 animate__animated animate__fadeIn">
+            <span class="dot dot-red"></span>
+            <span class="status-text uppercase tracking-widest text-[10px] md:text-xs">Đang kết nối...</span>
         </div>
-    </div>
+    </header>
 
-    <button id="spinBtn" class="remote-btn" disabled>
-        QUAY SỐ
-    </button>
+    <!-- Main Section -->
+    <main class="flex-grow flex flex-col items-center justify-center p-4">
+        <div class="spin-btn-container animate__animated animate__zoomIn">
+            <button id="spinBtn" class="remote-btn" disabled>
+                <i class="bi bi-arrow-repeat spin-icon text-5xl"></i>
+                <span class="btn-text">QUAY SỐ</span>
+                <span class="text-[10px] font-bold mt-2 opacity-50 btn-text">TOUCH TO START</span>
+            </button>
+        </div>
 
-    <div class="mt-16 text-center px-10">
-        <p id="msg" class="text-lg font-bold text-yellow-200 animate__animated h-8"></p>
-        <p class="text-xs opacity-50 mt-10 italic">Vui lòng đảm bảo trang quay số trên máy tính đang mở.</p>
-    </div>
+        <!-- Result Info (Optional) -->
+        <div class="mt-12 w-full max-w-sm glass-panel p-6 text-center animate__animated animate__fadeInUp">
+            <p id="msg" class="text-lg md:text-xl font-black text-td-gold uppercase tracking-widest h-8"></p>
+            <p class="text-[10px] md:text-xs opacity-60 mt-4 leading-relaxed">
+                <i class="bi bi-info-circle mr-1"></i>
+                Hệ thống đang kết nối trực tiếp với máy tính trung tâm qua mạng nội bộ.
+            </p>
+        </div>
+    </main>
+
+    <!-- Footer Section -->
+    <footer class="p-6 text-center">
+        <p class="text-[10px] uppercase font-bold opacity-30 tracking-widest">
+            © 2026 TDbank Management System &bull; v2.0
+        </p>
+    </footer>
 
     <script>
         const connection = new signalR.HubConnectionBuilder()
@@ -96,46 +250,70 @@
 
         const spinBtn = document.getElementById("spinBtn");
         const statusEl = document.getElementById("connection-status");
+        const statusText = statusEl.querySelector('.status-text');
+        const dot = statusEl.querySelector('.dot');
         const msgEl = document.getElementById("msg");
 
         connection.on("ReceiveStatus", (status) => {
             if (status === "spinning") {
                 spinBtn.disabled = true;
-                msgEl.innerText = "ĐANG QUAY...";
-                msgEl.className = "text-lg font-bold text-yellow-200 animate__animated animate__pulse animate__infinite";
+                spinBtn.classList.add('spinning');
+                spinBtn.classList.remove('btn-ready');
+                msgEl.innerText = "ĐANG QUAY SỐ...";
+                msgEl.className = "text-lg md:text-xl font-black text-white animate__animated animate__pulse animate__infinite";
             } else if (status === "ready") {
                 spinBtn.disabled = false;
-                msgEl.innerText = "SẴN SÀNG";
-                msgEl.className = "text-lg font-bold text-green-300 animate__animated animate__fadeIn";
+                spinBtn.classList.remove('spinning');
+                spinBtn.classList.add('btn-ready');
+                msgEl.innerText = "SẴN SÀNG QUAY";
+                msgEl.className = "text-lg md:text-xl font-black text-td-gold animate__animated animate__fadeIn";
             }
         });
 
         spinBtn.addEventListener("click", () => {
-            connection.invoke("TriggerSpin").catch(err => console.error(err));
-            // Feedback immediately
+            // Haptic Feedback for mobile
+            if (window.navigator.vibrate) {
+                window.navigator.vibrate(100);
+            }
+
+            connection.invoke("TriggerSpin").catch(err => {
+                console.error(err);
+                msgEl.innerText = "LỖI LỆNH";
+                msgEl.className = "text-lg font-bold text-red-300";
+            });
+
+            // Immediate UI feedback
             spinBtn.disabled = true;
+            spinBtn.classList.remove('btn-ready');
         });
 
         async function start() {
             try {
                 await connection.start();
                 console.log("SignalR Connected.");
-                statusEl.innerHTML = '<span class="status-dot status-online"></span> ĐÃ KẾT NỐI';
+                dot.className = "dot dot-green";
+                statusText.innerText = "ĐÃ KẾT NỐI HỆ THỐNG";
                 spinBtn.disabled = false;
-                msgEl.innerText = "ĐÃ SẴN SÀNG";
+                spinBtn.classList.add('btn-ready');
+                msgEl.innerText = "CHÀO MỪNG QUÝ KHÁCH";
             } catch (err) {
                 console.log(err);
+                dot.className = "dot dot-yellow";
+                statusText.innerText = "ĐANG THỬ LẠI...";
                 setTimeout(start, 5000);
             }
         };
 
         connection.onclose(async () => {
-            statusEl.innerHTML = '<span class="status-dot status-offline"></span> MẤT KẾT NỐI';
+            dot.className = "dot dot-red";
+            statusText.innerText = "MẤT KẾT NỐI";
             spinBtn.disabled = true;
+            spinBtn.classList.remove('btn-ready');
             await start();
         });
 
         start();
     </script>
 </body>
+
 </html>

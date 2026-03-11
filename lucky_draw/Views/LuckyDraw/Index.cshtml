@@ -271,13 +271,13 @@
 
         <!-- Header -->
         <header class="agribank-header flex justify-between items-center">
-            <div class="flex items-center gap-6">
+            <a href="/" class="flex items-center gap-6 hover:opacity-80 transition-opacity">
                 <img src="~/img/luckydrawicon.png" alt="TDbank" class="h-12">
                 <div class="border-l-2 border-red-600 pl-6">
                     <div class="text-xs font-bold uppercase tracking-tight">Ngân hàng Thanh Đa</div>
                     <div class="text-xl font-black text-red-700">Hội sở</div>
                 </div>
-            </div>
+            </a>
             <div class="flex gap-4 items-center">
                 <span class="text-red-700 font-bold uppercase text-sm">Chương trình:</span>
                 <select v-model="selectedProgram" @@change="fetchPrizes"
