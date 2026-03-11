@@ -1,4 +1,4 @@
-﻿using lucky_draw.Data;
+using lucky_draw.Data;
 using lucky_draw.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -29,6 +29,11 @@ namespace lucky_draw.Controllers
             var entity = await _context.CustomerReward.FindAsync(id);
             if (entity != null)
             {
+                // Sử dụng SQL thuần để lưu vào lịch sử (khớp với schema của bạn)
+                var sql = "INSERT INTO CustomerRewardHistory (Id, ProgramId, RewardId, CustomerId, ResultCode, TimeStamp, NumberOfCustomer) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6})";
+                await _context.Database.ExecuteSqlRawAsync(sql, 
+                    entity.Id, entity.ProgramId, entity.RewardId, entity.CustomerId, entity.ResultCode, entity.TimeStamp, entity.NumberOfCustomer);
+                
                 _context.CustomerReward.Remove(entity);
                 await _context.SaveChangesAsync();
             }
@@ -38,7 +43,15 @@ namespace lucky_draw.Controllers
         [HttpPost]
         public async Task<IActionResult> DeleteAll()
         {
-            _context.CustomerReward.RemoveRange(_context.CustomerReward);
+            var allResults = await _context.CustomerReward.ToListAsync();
+            foreach (var entity in allResults)
+            {
+                var sql = "INSERT INTO CustomerRewardHistory (Id, ProgramId, RewardId, CustomerId, ResultCode, TimeStamp, NumberOfCustomer) VALUES ({0}, {1}, {2}, {3}, {4}, {5}, {6})";
+                await _context.Database.ExecuteSqlRawAsync(sql, 
+                    entity.Id, entity.ProgramId, entity.RewardId, entity.CustomerId, entity.ResultCode, entity.TimeStamp, entity.NumberOfCustomer);
+            }
+
+            _context.CustomerReward.RemoveRange(allResults);
             await _context.SaveChangesAsync();
             return RedirectToAction("Index");
         }

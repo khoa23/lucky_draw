@@ -1,6 +1,8 @@
-﻿using lucky_draw.Models;
+using lucky_draw.Models;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore;
+using System; // Added for DateTime
+using System.ComponentModel.DataAnnotations.Schema; // Added for [Table] attribute
 
 namespace lucky_draw.Data
 {
@@ -16,5 +18,11 @@ namespace lucky_draw.Data
         public DbSet<CustomerReward> CustomerReward { get; set; }
         public DbSet<Temptable> Temptable { get; set; }
         public DbSet<LuckyProgram> Programs { get; set; }
+        public DbSet<CustomerRewardHistory> CustomerRewardHistory { get; set; } = default!;
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<CustomerRewardHistory>().HasNoKey();
+        }
     }
 }

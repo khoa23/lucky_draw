@@ -20,7 +20,7 @@
     <style>
         @@font-face {
             font-family: 'Roboto';
-            src: url('/lib/fonts/roboto/roboto.ttf') format('truetype');
+            src: url('@Url.Content("~/lib/fonts/roboto/roboto.ttf")') format('truetype');
         }
 
         :root {
@@ -156,7 +156,7 @@
 </head>
 <body>
     <header class="settings-header flex justify-between items-center mb-8">
-        <a href="/" class="flex items-center gap-4 hover:opacity-80 transition-opacity">
+        <a href="~/" class="flex items-center gap-4 hover:opacity-80 transition-opacity">
             <div class="p-1">
                 <img src="~/img/luckydrawicon.png" alt="Icon" class="h-12">
             </div>
@@ -166,7 +166,7 @@
             </div>
         </a>
         <div class="flex gap-4">
-            <a href="/LuckyDraw" class="flex items-center gap-2 text-gray-600 hover:text-red-700 font-bold transition-colors">
+            <a href="~/LuckyDraw" class="flex items-center gap-2 text-gray-600 hover:text-red-700 font-bold transition-colors">
                 <i class="bi bi-display"></i> Trở về trang quay số
             </a>
         </div>

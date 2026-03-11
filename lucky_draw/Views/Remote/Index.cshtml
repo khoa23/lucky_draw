@@ -1,5 +1,7 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @{
     Layout = null;
+    var baseUrl = Configuration["BaseUrl"] ?? Url.Content("~/");
 }
 
 <!DOCTYPE html>
@@ -197,7 +199,7 @@
 
     <!-- Header Section -->
     <header class="p-6 md:p-10 flex flex-col items-center">
-        <a href="/" class="flex flex-col items-center gap-2 group transition-all">
+        <a href="~/" class="flex flex-col items-center gap-2 group transition-all">
             <div class="p-2 glass-panel group-hover:bg-white/20 transition-all">
                 <img src="~/img/luckydrawicon.png" alt="Logo" class="h-12 w-12 md:h-16 md:w-16">
             </div>
@@ -243,8 +245,12 @@
     </footer>
 
     <script>
+        let baseUrl = "@baseUrl";
+        if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
+        const BASE_URL = baseUrl;
+
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/luckyHub")
+            .withUrl(BASE_URL + "luckyHub")
             .withAutomaticReconnect()
             .build();
 

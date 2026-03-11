@@ -41,7 +41,7 @@
             <p class="text-gray-500 text-sm mt-1">Vui lòng nhập mật khẩu để tiếp tục</p>
         </div>
 
-        <form method="post" action="/Remote/Login">
+        <form method="post" action="@Url.Action("Login", "Remote")">
             <div class="mb-6">
                 <label class="block text-gray-700 text-xs font-bold uppercase mb-2 ml-1">Mật khẩu truy cập</label>
                 <input type="password" name="password" required autofocus
@@ -63,7 +63,7 @@
         </form>
 
         <div class="mt-8 text-center">
-            <a href="/" class="text-gray-400 text-xs hover:text-red-600 transition-colors font-medium">
+            <a href="~/" class="text-gray-400 text-xs hover:text-red-600 transition-colors font-medium">
                 <i class="bi bi-arrow-left"></i> Quay lại Dashboard
             </a>
         </div>

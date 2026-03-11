@@ -1,5 +1,7 @@
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @{
     Layout = null;
+    var baseUrl = Configuration["BaseUrl"] ?? Url.Content("~/");
 }
 
 <!DOCTYPE html>
@@ -19,12 +21,12 @@
     <style>
         @@font-face {
             font-family: 'Orbitron';
-            src: url('/lib/fonts/orbitron/orbitron.ttf') format('truetype');
+            src: url('@Url.Content("~/lib/fonts/orbitron/orbitron.ttf")') format('truetype');
         }
 
         @@font-face {
             font-family: 'Roboto';
-            src: url('/lib/fonts/roboto/roboto.ttf') format('truetype');
+            src: url('@Url.Content("~/lib/fonts/roboto/roboto.ttf")') format('truetype');
         }
 
         :root {
@@ -37,15 +39,17 @@
             font-family: 'Roboto', sans-serif;
             background: radial-gradient(circle at center, #c0262d 0%, #800000 100%);
             color: white;
-            min-height: 100vh;
+            height: 100vh;
+            width: 100vw;
             margin: 0;
-            overflow-x: hidden;
+            overflow: hidden;
         }
 
         #app {
-            min-height: 100vh;
+            height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
         .agribank-header {
@@ -58,12 +62,13 @@
 
         .prize-tabs-container {
             background: rgba(0, 0, 0, 0.2);
-            padding: 15px;
+            padding: 10px;
             display: flex;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
         }
 
         .prize-tab {
@@ -91,36 +96,49 @@
         }
 
         .main-stage {
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
+            flex: 1;
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 10px 20px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            justify-content: center;
         }
 
         .led-screen {
             background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
-            border: 12px solid #ca8a04;
+            border: 8px solid #ca8a04;
             border-radius: 15px;
-            padding: 50px 20px;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
             position: relative;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            max-height: 85vh;
         }
 
         .lucky-numbers {
             display: flex;
             justify-content: center;
             gap: 10px;
-            margin: 40px 0;
+            margin: 20px 0;
         }
 
         .digit-box {
             background: white;
             color: #d32f2f;
-            width: 75px;
-            height: 100px;
+            width: 6vw;
+            max-width: 75px;
+            height: 10vh;
+            max-height: 100px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 4.5rem;
+            font-size: 3.5rem;
             font-weight: 900;
             border-radius: 6px;
             box-shadow: 0 6px 0 #999, inset 0 0 15px rgba(0, 0, 0, 0.1);
@@ -129,17 +147,28 @@
 
         .winner-panel {
             background: #fef08a;
-            /* Agribank Gold */
             color: #1e3a8a;
-            /* Blue text like in photo */
-            max-width: 800px;
-            margin: 40px auto 0;
-            padding: 30px;
+            max-width: 700px;
+            margin: 20px auto 0;
+            padding: 15px 30px;
             border-radius: 8px;
             text-align: left;
-            box-shadow: 20px 20px 0px rgba(30, 58, 138, 0.2);
+            box-shadow: 10px 10px 0px rgba(30, 58, 138, 0.2);
             position: relative;
             animation: slideUp 0.5s ease-out;
+        }
+        
+        .winners-scroll-area {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .winners-scroll-area::-webkit-scrollbar {
+            width: 6px;
+        }
+        .winners-scroll-area::-webkit-scrollbar-thumb {
+            background: rgba(254, 240, 138, 0.3);
+            border-radius: 3px;
         }
 
         @@keyframes slideUp {
@@ -157,13 +186,13 @@
         .spin-button {
             background: var(--agri-gold);
             color: var(--agri-red);
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             font-weight: 900;
-            padding: 15px 60px;
+            padding: 10px 50px;
             border-radius: 50px;
             border: none;
             cursor: pointer;
-            box-shadow: 0 8px 0 #ca8a04;
+            box-shadow: 0 6px 0 #ca8a04;
             transition: all 0.1s;
             text-transform: uppercase;
             letter-spacing: 2px;
@@ -271,7 +300,7 @@
 
         <!-- Header -->
         <header class="agribank-header flex justify-between items-center">
-            <a href="/" class="flex items-center gap-6 hover:opacity-80 transition-opacity">
+            <a href="~/" class="flex items-center gap-6 hover:opacity-80 transition-opacity">
                 <img src="~/img/luckydrawicon.png" alt="TDbank" class="h-12">
                 <div class="border-l-2 border-red-600 pl-6">
                     <div class="text-xs font-bold uppercase tracking-tight">Ngân hàng Thanh Đa</div>
@@ -301,12 +330,14 @@
 
         <main class="main-stage">
             <!-- Drawing View -->
-            <div v-if="activeTab === 'draw'" class="animate__animated animate__fadeIn">
-                <h2
-                    class="text-3xl md:text-5xl font-black text-center text-yellow-300 mb-2 uppercase tracking-tighter drop-shadow-lg">
-                    LỄ QUAY THƯỞNG
-                </h2>
-                <p class="text-center text-white italic text-xl mb-10 opacity-90">"{{ selectedProgramName }}"</p>
+            <div v-if="activeTab === 'draw'" class="animate__animated animate__fadeIn flex flex-col h-full">
+                <div class="mb-4">
+                    <h2
+                        class="text-2xl md:text-4xl font-black text-center text-yellow-300 uppercase tracking-tighter drop-shadow-lg">
+                        LỄ QUAY THƯỞNG
+                    </h2>
+                    <p class="text-center text-white italic text-lg opacity-90">"{{ selectedProgramName }}"</p>
+                </div>
 
                 <div v-if="selectedReward" class="led-screen text-center">
 
@@ -360,14 +391,16 @@
             </div>
 
             <!-- Winners View -->
-            <div v-if="activeTab === 'winners'" class="animate__animated animate__fadeIn">
-                <div class="bg-black/30 p-8 rounded-xl border border-white/10 backdrop-blur-lg">
-                    <div class="flex justify-between items-center mb-8">
-                        <h2 class="text-3xl font-black text-yellow-300 uppercase">DANH SÁCH KHÁCH HÀNG TRÚNG THƯỞNG</h2>
+            <div v-if="activeTab === 'winners'" class="animate__animated animate__fadeIn h-full flex flex-col">
+                <div class="bg-black/30 p-6 rounded-xl border border-white/10 backdrop-blur-lg h-full flex flex-col overflow-hidden">
+                    <div class="flex justify-between items-center mb-6 flex-shrink-0">
+                        <h2 class="text-2xl font-black text-yellow-300 uppercase">DANH SÁCH KHÁCH HÀNG TRÚNG THƯỞNG</h2>
                         <button @@click="activeTab = 'draw'"
-                            class="text-white bg-white/20 px-4 py-2 rounded hover:bg-white/30 transition-colors">Quay
+                            class="text-white bg-white/20 px-4 py-1 rounded hover:bg-white/30 transition-colors">Quay
                             lại</button>
                     </div>
+                    
+                    <div class="winners-scroll-area">
 
                     <div v-if="winnersList.length === 0" class="text-center py-20 opacity-50">
                         Chưa có dữ liệu người trúng giải.
@@ -411,8 +444,14 @@
 
     <script src="~/lib/signalr/signalr.min.js"></script>
     <script>
+        let baseUrl = "@baseUrl";
+        if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
+        const BASE_URL = baseUrl;
+        
+        axios.defaults.baseURL = BASE_URL;
+
         const connection = new signalR.HubConnectionBuilder()
-            .withUrl("/luckyHub")
+            .withUrl(BASE_URL + "luckyHub")
             .withAutomaticReconnect()
             .build();
 
@@ -434,7 +473,7 @@
 
                 const fetchPrograms = async () => {
                     try {
-                        const response = await axios.get('/api/luckydrawapi/programs');
+                        const response = await axios.get('api/luckydrawapi/programs');
                         programs.value = response.data;
                         if (programs.value.length > 0) {
                             selectedProgram.value = programs.value[0].id;
@@ -446,7 +485,7 @@
                 const fetchPrizes = async () => {
                     if (!selectedProgram.value) return;
                     try {
-                        const response = await axios.get(`/api/luckydrawapi/prizes/${selectedProgram.value}`);
+                        const response = await axios.get(`api/luckydrawapi/prizes/${selectedProgram.value}`);
                         prizes.value = response.data;
                         if (selectedReward.value) {
                             selectedReward.value = prizes.value.find(p => p.id === selectedReward.value.id) || null;
@@ -465,7 +504,7 @@
 
                 const fetchWinners = async () => {
                     try {
-                        const response = await axios.get('/api/luckydrawapi/winners');
+                        const response = await axios.get('api/luckydrawapi/winners');
                         winnersList.value = response.data;
                     } catch (err) { console.error(err); }
                 };
@@ -493,19 +532,34 @@
 
                     isSpinning.value = true;
                     lastWinner.value = null;
-                    // Removed spin-sound play logic
+                    
+                    // Phát âm thanh vòng quay
+                    const spinBtnAudio = document.getElementById('spin-sound');
+                    let spinDuration = 3000; // Mặc định 3s nếu không có âm thanh
+
+                    if (spinBtnAudio) {
+                        spinBtnAudio.pause();
+                        spinBtnAudio.currentTime = 0;
+                        spinBtnAudio.play().catch(e => console.warn("Audio play blocked:", e));
+                        // Lấy thời lượng thực tế của file âm thanh (đổi ra ms)
+                        if (spinBtnAudio.duration) {
+                            spinDuration = spinBtnAudio.duration * 1000;
+                        }
+                    }
 
                     const animationInterval = setInterval(() => {
                         codeDigits.value = codeDigits.value.map(() => Math.floor(Math.random() * 10));
                     }, 50);
 
                     try {
-                        const response = await axios.post('/api/luckydrawapi/spin', {
+                        // Gọi API lấy kết quả ngay từ đầu để tránh trễ
+                        const response = await axios.post('api/luckydrawapi/spin', {
                             rewardId: selectedReward.value.id
                         });
 
                         const winnerData = response.data;
 
+                        // Chờ cho đến khi hết âm thanh mới hiện kết quả
                         setTimeout(() => {
                             clearInterval(animationInterval);
                             const code = winnerData.customerCode.toString();
@@ -516,10 +570,14 @@
                             isSpinning.value = false;
 
                             const winAudio = document.getElementById('win-sound');
-                            if (winAudio) winAudio.play();
+                            if (winAudio) {
+                                winAudio.pause();
+                                winAudio.currentTime = 0;
+                                winAudio.play().catch(e => console.warn("Audio play blocked by browser:", e));
+                            }
 
                             fetchPrizes();
-                        }, 3000);
+                        }, spinDuration);
 
                     } catch (err) {
                         clearInterval(animationInterval);
@@ -558,8 +616,8 @@
     </script>
 
     <!-- Preload sounds -->
-    <audio id="spin-sound" src="~/lib/spin-sound.mp3" preload="auto"></audio>
-    <audio id="win-sound" src="~/lib/win-sound.mp3" preload="auto"></audio>
+    <audio id="spin-sound" src="@Url.Content("~/lib/sounds/spin-sound.mp3")" preload="auto"></audio>
+    <audio id="win-sound" src="@Url.Content("~/lib/win-sound.mp3")" preload="auto"></audio>
 </body>
 
 </html>

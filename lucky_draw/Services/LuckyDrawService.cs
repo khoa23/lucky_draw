@@ -16,11 +16,21 @@ namespace lucky_draw.Services
         // Chọn ngẫu nhiên tuần tự - Tối ưu cho DB lớn
         public async Task<Customer> RandomSequentialAsync(int rewardId)
         {
-            // Thực hiện ORDER BY NEWID() trực tiếp dưới SQL Server để lấy 1 bản ghi ngẫu nhiên
-            // Điều này tránh việc tải hàng triệu dòng vào RAM
-            var customer = await _context.Customers
-                .Where(x => !_context.CustomerReward.Any(cr => cr.RewardId == rewardId && cr.CustomerId == x.Id))
-                .OrderBy(x => Guid.NewGuid()) 
+            // 1. Chỉ lấy những người CHƯA trúng bất kỳ giải nào
+            var query = _context.Customers
+                .Where(x => !_context.CustomerReward.Any(cr => cr.CustomerId == x.Id));
+
+            // 2. Lấy tổng số người đủ điều kiện
+            int count = await query.CountAsync();
+            if (count == 0) return null;
+
+            // 3. Chọn một vị trí ngẫu nhiên
+            int randomOffset = Random.Shared.Next(0, count);
+
+            // 4. Lấy người tại vị trí đó (Sử dụng Skip/Take nhanh hơn OrderBy Guid cho bảng lớn)
+            var customer = await query
+                .OrderBy(x => x.Id)
+                .Skip(randomOffset)
                 .FirstOrDefaultAsync();
 
             return customer;
@@ -31,8 +41,19 @@ namespace lucky_draw.Services
         {
             if (takeCount <= 0) return new List<Customer>();
 
-            var customers = await _context.Customers
-                .Where(x => !_context.CustomerReward.Any(cr => cr.RewardId == rewardId && cr.CustomerId == x.Id))
+            // Lọc những người chưa trúng giải nào
+            var query = _context.Customers
+                .Where(x => !_context.CustomerReward.Any(cr => cr.CustomerId == x.Id));
+
+            int count = await query.CountAsync();
+            if (count == 0) return new List<Customer>();
+
+            // Nếu số lượng yêu cầu lớn hơn số người còn lại, lấy tất cả
+            if (takeCount >= count) return await query.ToListAsync();
+
+            // Chọn ngẫu nhiên (với danh sách nhiều người, dùng OrderBy Guid vẫn linh hoạt hơn nếu số lượng vừa phải)
+            // Hoặc có thể dùng giải thuật Skip ngẫu nhiên nhiều lần. Ở đây dùng OrderBy Guid cho tính ngẫu nhiên cao.
+            var customers = await query
                 .OrderBy(x => Guid.NewGuid())
                 .Take(takeCount)
                 .ToListAsync();
