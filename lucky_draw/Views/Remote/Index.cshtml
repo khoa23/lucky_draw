@@ -1,7 +1,7 @@
-@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @{
     Layout = null;
-    var baseUrl = Configuration["BaseUrl"] ?? Url.Content("~/");
+    // Đường dẫn gốc lấy theo nơi ứng dụng đang chạy (ứng dụng con trên IIS hay chạy trực tiếp), không gán cứng
+    var baseUrl = Url.Content("~/");
 }
 
 <!DOCTYPE html>
@@ -15,7 +15,7 @@
     <link rel="icon" type="image/png" href="~/img/luckydrawicon.png">
 
     <!-- Local Assets -->
-    <script src="~/lib/tailwind/tailwindcss.js"></script>
+    @await Html.PartialAsync("_Tailwind")
     <script src="~/lib/signalr/signalr.min.js"></script>
     <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
@@ -38,10 +38,14 @@
             overflow: hidden;
         }
 
+        /* Chữ vàng thương hiệu (dùng cho dòng trạng thái và tiêu đề nhỏ) */
+        .text-td-gold {
+            color: var(--td-gold);
+        }
+
         /* Glassmorphism Effect */
         .glass-panel {
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 2rem;
         }
@@ -192,10 +196,77 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* Thông báo lỗi khi quay bằng Remote */
+        .error-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .error-overlay.show {
+            display: flex;
+        }
+
+        .error-card {
+            background: white;
+            color: #d32f2f;
+            padding: 32px 24px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 420px;
+            width: 100%;
+            border-top: 10px solid #ca8a04;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .error-card .error-icon {
+            font-size: 3rem;
+            margin-bottom: 16px;
+        }
+
+        .error-card .error-title {
+            font-size: 1.4rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .error-card .error-text {
+            color: #374151;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .error-card .error-close {
+            background: #b91c1c;
+            color: white;
+            border: none;
+            padding: 12px 40px;
+            border-radius: 9999px;
+            font-weight: 900;
+            cursor: pointer;
+        }
     </style>
 </head>
 
 <body class="safe-area-inset">
+
+    <!-- Thông báo lỗi khi quay bằng Remote -->
+    <div id="error-overlay" class="error-overlay">
+        <div class="error-card animate__animated animate__zoomIn">
+            <div class="error-icon">⚠️</div>
+            <div class="error-title">Thông báo hệ thống</div>
+            <p id="error-text" class="error-text"></p>
+            <button id="error-close" class="error-close">ĐÓNG THÔNG BÁO</button>
+        </div>
+    </div>
 
     <!-- Header Section -->
     <header class="p-6 md:p-10 flex flex-col items-center">
@@ -260,7 +331,65 @@
         const dot = statusEl.querySelector('.dot');
         const msgEl = document.getElementById("msg");
 
+        const errorOverlay = document.getElementById("error-overlay");
+        const errorText = document.getElementById("error-text");
+
+        let lastStatus = null;
+        let commandTimer = null;
+
+        // Âm thanh phản hồi trên điện thoại, tạo bằng Web Audio API (không cần file)
+        const Sfx = (() => {
+            let ctx = null;
+            const tone = (freq, { to, type = 'sine', vol = 0.2, at = 0, dur = 0.15 } = {}) => {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return;
+                if (!ctx) ctx = new AudioCtx();
+                if (ctx.state === 'suspended') ctx.resume().catch(() => { });
+                const t = ctx.currentTime + at;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, t);
+                if (to) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+                gain.gain.setValueAtTime(0.0001, t);
+                gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                osc.connect(gain).connect(ctx.destination);
+                osc.start(t);
+                osc.stop(t + dur + 0.02);
+            };
+            return {
+                press: () => tone(320, { to: 110, type: 'triangle', vol: 0.3, dur: 0.14 }),
+                done: () => [1046.5, 1318.5, 1568].forEach((f, i) => tone(f, { vol: 0.12, at: i * 0.07, dur: 0.5 })),
+                error: () => { tone(220, { type: 'sawtooth', vol: 0.07, dur: 0.18 }); tone(165, { type: 'sawtooth', vol: 0.07, at: 0.2, dur: 0.32 }); }
+            };
+        })();
+
+        document.getElementById("error-close").addEventListener("click", () => {
+            errorOverlay.classList.remove('show');
+        });
+
+        // Màn hình quay số báo lỗi (hết giải, chưa chọn giải...) => hiện thông báo ngay trên Remote
+        connection.on("ReceiveSpinError", (message) => {
+            lastStatus = "error";
+            clearTimeout(commandTimer);
+            errorText.textContent = message;
+            errorOverlay.classList.add('show');
+            Sfx.error();
+            if (window.navigator.vibrate) {
+                window.navigator.vibrate([100, 50, 100]);
+            }
+            spinBtn.disabled = false;
+            spinBtn.classList.remove('spinning');
+            spinBtn.classList.add('btn-ready');
+            msgEl.innerText = "SẴN SÀNG QUAY";
+            msgEl.className = "text-lg md:text-xl font-black text-td-gold animate__animated animate__fadeIn";
+        });
+
         connection.on("ReceiveStatus", (status) => {
+            const wasSpinning = lastStatus === "spinning";
+            lastStatus = status;
+            clearTimeout(commandTimer);
             if (status === "spinning") {
                 spinBtn.disabled = true;
                 spinBtn.classList.add('spinning');
@@ -273,10 +402,12 @@
                 spinBtn.classList.add('btn-ready');
                 msgEl.innerText = "SẴN SÀNG QUAY";
                 msgEl.className = "text-lg md:text-xl font-black text-td-gold animate__animated animate__fadeIn";
+                if (wasSpinning) Sfx.done(); // Màn hình quay vừa công bố kết quả
             }
         });
 
         spinBtn.addEventListener("click", () => {
+            Sfx.press();
             // Haptic Feedback for mobile
             if (window.navigator.vibrate) {
                 window.navigator.vibrate(100);
@@ -291,11 +422,44 @@
             // Immediate UI feedback
             spinBtn.disabled = true;
             spinBtn.classList.remove('btn-ready');
+
+            // Nếu màn hình quay số không phản hồi (chưa mở / chưa chọn giải) thì mở lại nút sau vài giây
+            lastStatus = null;
+            clearTimeout(commandTimer);
+            commandTimer = setTimeout(() => {
+                if (lastStatus === null && connection.state === signalR.HubConnectionState.Connected) {
+                    spinBtn.disabled = false;
+                    spinBtn.classList.add('btn-ready');
+                    msgEl.innerText = "MÀN HÌNH CHƯA SẴN SÀNG";
+                    msgEl.className = "text-lg font-bold text-red-300";
+                }
+            }, 5000);
         });
+
+        // Gửi thông tin thiết bị để máy chủ ghi nhật ký (trình duyệt không cho đọc MAC/serial;
+        // dòng máy chỉ có trên trình duyệt Chromium khi chạy HTTPS)
+        async function registerDevice() {
+            const info = {
+                screen: screen.width + 'x' + screen.height + '@@' + (window.devicePixelRatio || 1),
+                timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || null,
+                language: navigator.language || null
+            };
+            try {
+                if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+                    const hints = await navigator.userAgentData.getHighEntropyValues(['model', 'platformVersion']);
+                    info.model = hints.model || null;
+                    info.platformVersion = hints.platformVersion || null;
+                }
+            } catch (e) { /* trình duyệt không hỗ trợ */ }
+            connection.invoke("RegisterDevice", info).catch(err => console.error(err));
+        }
+
+        connection.onreconnected(registerDevice);
 
         async function start() {
             try {
                 await connection.start();
+                registerDevice();
                 console.log("SignalR Connected.");
                 dot.className = "dot dot-green";
                 statusText.innerText = "ĐÃ KẾT NỐI HỆ THỐNG";

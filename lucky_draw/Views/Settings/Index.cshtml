@@ -12,7 +12,7 @@
     <title>TDbank - Cấu hình hệ thống</title>
     <link rel="icon" type="image/png" href="~/img/luckydrawicon.png">
     <!-- Local Assets -->
-    <script src="~/lib/tailwind/tailwindcss.js"></script>
+    @await Html.PartialAsync("_Tailwind")
     <script src="~/lib/sortablejs/sortable.min.js"></script>
     <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
@@ -152,6 +152,47 @@
             display: none;
             z-index: 10000;
         }
+
+        /* Ô ngày dd/MM/yyyy + nút mở lịch */
+        .date-vn {
+            position: relative;
+        }
+
+        .date-vn input[type="text"] {
+            padding-right: 40px;
+        }
+
+        .date-vn-btn {
+            position: absolute;
+            top: 50%;
+            right: 6px;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .date-vn-btn:hover {
+            color: #c0262d;
+            background: #fef2f2;
+        }
+
+        /* Lịch chọn ngày gốc của trình duyệt: ẩn đi, chỉ dùng để mở bảng chọn ngày */
+        .date-vn-picker {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+            border: 0;
+            padding: 0;
+        }
     </style>
 </head>
 <body>
@@ -195,12 +236,23 @@
                                 <tr>
                                     <td>
                                         <form action="@Url.Action("UpdateProgram", "Settings")" method="post" id="form-prog-@item.Id">
+                                            @Html.AntiForgeryToken()
                                             <input type="hidden" name="id" value="@item.Id" />
                                             <input type="text" name="name" value="@item.ProgramName" class="input-agri font-bold" />
                                         </form>
                                     </td>
                                     <td>
-                                        <input type="date" name="dateStart" value="@(item.DateStart?.ToString("yyyy-MM-dd"))" class="input-agri" form="form-prog-@item.Id" />
+                                        <!-- Ô ngày dd/MM/yyyy cố định (input type="date" hiển thị theo ngôn ngữ trình duyệt nên có thể ra MM/dd/yyyy) -->
+                                        <div class="date-vn">
+                                            <input type="text" name="dateStart" value="@(item.DateStart?.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture))"
+                                                placeholder="dd/mm/yyyy" inputmode="numeric" maxlength="10" autocomplete="off"
+                                                pattern="\d{2}/\d{2}/\d{4}" title="Nhập ngày theo dạng dd/mm/yyyy"
+                                                class="input-agri" form="form-prog-@item.Id" data-date-vn />
+                                            <button type="button" class="date-vn-btn" title="Chọn ngày" aria-label="Chọn ngày">
+                                                <i class="bi bi-calendar3"></i>
+                                            </button>
+                                            <input type="date" class="date-vn-picker" tabindex="-1" aria-hidden="true" />
+                                        </div>
                                     </td>
                                     <td><span class="text-green-600 font-bold"><i class="bi bi-check-circle-fill"></i> Hoạt động</span></td>
                                     <td>
@@ -241,6 +293,7 @@
                                 <tr data-id="@r.Id" class="reward-row bg-white hover:bg-slate-50 transition-colors">
                                     <td class="handle text-center"><i class="bi bi-grip-vertical text-xl"></i></td>
                                     <form action="@Url.Action("UpdateReward", "Settings")" method="post" id="form-rew-@r.Id">
+                                        @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@r.Id" />
                                         <td>
                                             <input type="text" name="name" value="@r.RewardName" class="input-agri font-bold" />
@@ -252,7 +305,7 @@
                                             <select name="rewardType" class="input-agri">
                                                 <option value="">-- Chọn --</option>
                                                 @foreach (var type in Model.RewardTypes) {
-                                                    <option value="@type.Id" selected="@(r.RewardType == type.Id)">@type.Name</option>
+                                                    <option value="@type.Id" selected="@(r.RewardType == type.Id)" title="@type.Description">@type.Name</option>
                                                 }
                                             </select>
                                         </td>
@@ -266,12 +319,11 @@
                                             <button type="submit" class="btn-save">
                                                 <i class="bi bi-save-fill"></i> Lưu
                                             </button>
-                                            <form action="@Url.Action("DeleteReward", "Settings")" method="post" onsubmit="return confirm('Xóa giải thưởng này?');" class="inline">
-                                                <input type="hidden" name="id" value="@r.Id" />
-                                                <button type="submit" class="btn-delete" title="Xóa giải">
-                                                    <i class="bi bi-trash3-fill"></i>
-                                                </button>
-                                            </form>
+                                            <!-- Không lồng form trong form (trình duyệt bỏ qua form con): dùng formaction gửi form của dòng này tới DeleteReward -->
+                                            <button type="submit" formaction="@Url.Action("DeleteReward", "Settings")" formnovalidate
+                                                onclick="return confirm('Xóa giải thưởng này?');" class="btn-delete" title="Xóa giải">
+                                                <i class="bi bi-trash3-fill"></i>
+                                            </button>
                                         </td>
                                     </form>
                                 </tr>
@@ -282,6 +334,7 @@
                             <tr class="add-row">
                                 <td></td>
                                 <form action="@Url.Action("AddReward", "Settings")" method="post">
+                                    @Html.AntiForgeryToken()
                                     <td>
                                         <input type="text" name="name" placeholder="Tên giải mới..." class="input-agri border-green-200" required />
                                     </td>
@@ -292,7 +345,7 @@
                                         <select name="rewardType" class="input-agri border-green-200">
                                             <option value="">-- Loại giải --</option>
                                             @foreach (var type in Model.RewardTypes) {
-                                                <option value="@type.Id">@type.Name</option>
+                                                <option value="@type.Id" title="@type.Description">@type.Name</option>
                                             }
                                         </select>
                                     </td>
@@ -315,6 +368,11 @@
                             </tr>
                         </tfoot>
                     </table>
+                    <p class="text-xs text-slate-500 italic" style="padding: 10px 16px; margin: 0;">
+                        <i class="bi bi-info-circle"></i>
+                        Loại giải <b>Chọn ngẫu nhiên liên tục</b>: bấm quay 1 lần sẽ ra toàn bộ số giải còn lại (phù hợp giải có số lượng lớn).
+                        Các loại khác: mỗi lần quay ra 1 người.
+                    </p>
                 </div>
             </section>
         </div>
@@ -344,7 +402,9 @@
                     fetch('@Url.Action("ReorderRewards", "Settings")', {
                         method: 'POST',
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            // Token chống CSRF (lấy từ form trên trang)
+                            'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                         },
                         body: JSON.stringify(ids)
                     }).then(response => {
@@ -368,6 +428,57 @@
                     });
                 }
             });
+        });
+
+        // Ô ngày dd/MM/yyyy: tự chèn dấu "/", kiểm tra ngày hợp lệ, nút lịch để chọn ngày
+        document.querySelectorAll('[data-date-vn]').forEach(function (input) {
+            const wrap = input.closest('.date-vn');
+            const picker = wrap.querySelector('.date-vn-picker');
+            const button = wrap.querySelector('.date-vn-btn');
+
+            const parse = function (text) {
+                const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(text);
+                if (!m) return null;
+                const day = +m[1], month = +m[2], year = +m[3];
+                const date = new Date(year, month - 1, day);
+                return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+                    ? { day: m[1], month: m[2], year: m[3] } : null;
+            };
+
+            const validate = function () {
+                input.setCustomValidity(input.value === '' || parse(input.value) ? '' : 'Ngày không hợp lệ, nhập theo dạng dd/mm/yyyy');
+            };
+
+            input.addEventListener('input', function (e) {
+                // Chỉ giữ chữ số và tự thêm "/" sau ngày, tháng (bỏ qua khi người dùng đang xóa)
+                if (e.inputType && e.inputType.startsWith('delete')) { validate(); return; }
+                const digits = input.value.replace(/\D/g, '').slice(0, 8);
+                let text = digits.slice(0, 2);
+                if (digits.length > 2) text += '/' + digits.slice(2, 4);
+                if (digits.length > 4) text += '/' + digits.slice(4);
+                if (digits.length === 2 || digits.length === 4) text += '/';
+                input.value = text;
+                validate();
+            });
+
+            button.addEventListener('click', function () {
+                const d = parse(input.value);
+                picker.value = d ? d.year + '-' + d.month + '-' + d.day : '';
+                if (picker.showPicker) {
+                    try { picker.showPicker(); return; } catch (err) { /* trình duyệt cũ */ }
+                }
+                picker.focus();
+                picker.click();
+            });
+
+            picker.addEventListener('change', function () {
+                if (!picker.value) return;
+                const parts = picker.value.split('-'); // yyyy-MM-dd
+                input.value = parts[2] + '/' + parts[1] + '/' + parts[0];
+                validate();
+            });
+
+            validate();
         });
     </script>
 </body>

@@ -1,41 +1,18 @@
+using lucky_draw.Security;
+using lucky_draw.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace lucky_draw.Controllers
 {
+    // Đăng nhập dùng chung tại /Account/Login; mật khẩu Remote chỉ có quyền vào trang này
+    [Authorize(Roles = AppRoles.AdminOrRemote)]
     public class RemoteController : Controller
     {
-        private readonly IConfiguration _configuration;
-
-        public RemoteController(IConfiguration configuration)
-        {
-            _configuration = configuration;
-        }
-
         public IActionResult Index()
         {
-            if (HttpContext.Session.GetString("RemoteAuthenticated") != "true")
-            {
-                return RedirectToAction("Login");
-            }
-            return View();
-        }
-
-        [HttpGet]
-        public IActionResult Login()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public IActionResult Login(string password)
-        {
-            var correctPassword = _configuration["RemoteSettings:Password"];
-            if (password == correctPassword)
-            {
-                HttpContext.Session.SetString("RemoteAuthenticated", "true");
-                return RedirectToAction("Index");
-            }
-            ViewBag.Error = "Mật khẩu không đúng!";
+            // Thiết bị đã đăng nhập từ trước khi có nhật ký cũng được cấp mã thiết bị
+            AuditLogger.EnsureDeviceId(HttpContext);
             return View();
         }
     }

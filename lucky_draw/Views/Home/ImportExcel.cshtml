@@ -11,7 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Import Dữ liệu - TDbank</title>
     <!-- Local Assets -->
-    <script src="~/lib/tailwind/tailwindcss.js"></script>
+    @await Html.PartialAsync("_Tailwind")
     <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
     <style>
@@ -68,7 +68,8 @@
                 <p class="mt-2 text-sm text-gray-500">Hệ thống nạp danh sách khách hàng từ file Excel</p>
             </div>
 
-            <form asp-action="ImportExcel" enctype="multipart/form-data" method="post" class="mt-8 space-y-6">
+            <form asp-action="ImportExcel" enctype="multipart/form-data" method="post" class="mt-8 space-y-6" onsubmit="onImportSubmit(this)">
+                @Html.AntiForgeryToken()
                 <div class="rounded-md shadow-sm -space-y-px">
                     <div class="flex items-center justify-center w-full">
                         <label
@@ -76,9 +77,9 @@
                             <div class="flex flex-col items-center justify-center pt-7">
                                 <i class="bi bi-cloud-arrow-up text-3xl text-gray-400 group-hover:text-agri"></i>
                                 <p class="pt-1 text-sm tracking-wider text-gray-400 group-hover:text-agri"
-                                    id="file-name">Chọn file .xlsx hoặc .xls</p>
+                                    id="file-name">Chọn file .xlsx, .xls hoặc .csv</p>
                             </div>
-                            <input type="file" name="file" class="hidden" accept=".xlsx, .xls" required
+                            <input type="file" name="file" class="hidden" accept=".xlsx, .xls, .csv" required
                                 onchange="updateFileName(this)" />
                         </label>
                     </div>
@@ -113,7 +114,7 @@
                 }
 
                 <div>
-                    <button type="submit"
+                    <button type="submit" id="import-btn"
                         class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-agri hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all shadow-lg active:scale-95">
                         BẮT ĐẦU IMPORT
                     </button>
@@ -129,7 +130,8 @@
                     </a>
                 </div>
                 <div class="space-y-1">
-                    <p>Mẹo: Đảm bảo file Excel có đúng cấu trúc 10 cột theo quy định.</p>
+                    <p>Dòng đầu tiên là tiêu đề cột theo file mẫu (thứ tự cột không bắt buộc). Bắt buộc có cột CustomerId, CustomerCode, FullName.</p>
+                    <p>Dữ liệu lớn (trên 1 triệu dòng): chia thành nhiều sheet trong cùng file Excel, hoặc dùng file .csv.</p>
                     <p>Quy trình: Truncate bảng tạm -> Nạp dữ liệu -> Chạy Procedure xử lý.</p>
                 </div>
             </div>
@@ -142,8 +144,16 @@
 
     <script>
         function updateFileName(input) {
-            const fileName = input.files[0] ? input.files[0].name : "Chọn file .xlsx hoặc .xls";
+            const fileName = input.files[0] ? input.files[0].name : "Chọn file .xlsx, .xls hoặc .csv";
             document.getElementById('file-name').textContent = fileName;
+        }
+
+        // Import dữ liệu lớn có thể mất vài phút: khóa nút để tránh bấm lặp gửi nhiều lần
+        function onImportSubmit(form) {
+            const btn = document.getElementById('import-btn');
+            btn.disabled = true;
+            btn.classList.add('opacity-60', 'cursor-wait');
+            btn.textContent = 'ĐANG IMPORT... VUI LÒNG KHÔNG ĐÓNG TRANG';
         }
     </script>
 </body>

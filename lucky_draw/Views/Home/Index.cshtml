@@ -12,7 +12,7 @@
     <title>TDbank - Dashboard</title>
     <link rel="icon" type="image/png" href="~/img/luckydrawicon.png">
     <!-- Local Assets -->
-    <script src="~/lib/tailwind/tailwindcss.js"></script>
+    @await Html.PartialAsync("_Tailwind")
     <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
     <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
     <style>
@@ -67,6 +67,13 @@
                     <div class="h-10 w-10 rounded-full bg-agri flex items-center justify-center text-white font-bold">
                         A
                     </div>
+                    <form action="@Url.Action("Logout", "Account")" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" title="Đăng xuất"
+                            class="h-10 px-4 rounded-full border border-gray-200 text-gray-600 hover:text-red-700 hover:border-red-300 text-sm font-bold">
+                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -138,6 +145,17 @@
                 </div>
                 <h3 class="text-2xl font-bold text-gray-900 mb-2">Cấu hình hệ thống</h3>
                 <p class="text-gray-500 text-sm">Cài đặt chương trình, hạng mục giải thưởng và thông tin ngân hàng.</p>
+            </a>
+
+            <!-- Khách hàng tham gia -->
+            <a href="~/Participants"
+                class="card-menu bg-white overflow-hidden rounded-2xl shadow-sm p-8 flex flex-col items-center text-center group">
+                <div
+                    class="h-20 w-20 bg-cyan-50 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-cyan-600 transition-colors">
+                    <i class="bi bi-people-fill text-cyan-600 text-4xl group-hover:text-white"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">Khách hàng tham gia</h3>
+                <p class="text-gray-500 text-sm">Danh sách và số lượng khách hàng đủ điều kiện quay số, tra cứu theo mã khách hàng.</p>
             </a>
 
             <!-- Help -->

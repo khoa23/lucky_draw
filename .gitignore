@@ -1,0 +1,41 @@
+# ===== Build output =====
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+[Ll]og/
+[Ll]ogs/
+publish/
+*.nupkg
+
+# ===== Nhật ký ứng dụng (đăng nhập, quay số, xóa kết quả) =====
+# Chứa IP, địa chỉ MAC, tên khách hàng trúng thưởng => không đưa lên git
+lucky_draw/Logs/
+
+# ===== Visual Studio / VS Code / Rider =====
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# ===== Cấu hình cá nhân / bí mật (không đưa mật khẩu lên git) =====
+# Đặt mật khẩu theo máy trong appsettings.Local.json hoặc biến môi trường
+appsettings.Local.json
+appsettings.*.Local.json
+*.pfx
+.env
+
+# ===== Tệp tạm =====
+*.log
+*.tmp
+*.swp
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# ===== Công cụ build giao diện tải về (tools/build-frontend.ps1 lưu vào %TEMP%, phòng khi tải vào repo) =====
+tailwindcss*.exe

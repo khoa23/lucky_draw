@@ -1,0 +1,388 @@
+@model lucky_draw.Controllers.ParticipantsViewModel
+@using lucky_draw.Services
+@{
+    Layout = null;
+    var vi = System.Globalization.CultureInfo.GetCultureInfo("vi-VN");
+    var filterKey = Model.Filter switch { ParticipantFilter.Eligible => "eligible", ParticipantFilter.Won => "won", _ => "all" };
+    var rows = Model.Page.Rows;
+    var firstNo = (long)(Model.PageNumber - 1) * Model.PageSize + 1;
+
+    string PageUrl(object extra) => Url.Action("Index", new RouteValueDictionary(extra)
+    {
+        ["filter"] = filterKey, ["q"] = Model.Query, ["size"] = Model.PageSize
+    })!;
+    string FilterUrl(string f) => Url.Action("Index", new { filter = f, q = Model.Query, size = Model.PageSize })!;
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TDbank - Khách hàng tham gia</title>
+    <link rel="icon" type="image/png" href="~/img/luckydrawicon.png">
+    @await Html.PartialAsync("_Tailwind")
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.css" />
+    <style>
+        @@font-face {
+            font-family: 'Roboto';
+            src: url('@Url.Content("~/lib/fonts/roboto/roboto.ttf")') format('truetype');
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .page-header {
+            background: white;
+            border-bottom: 4px solid #c0262d;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 18px 22px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        .stat-value {
+            margin-top: 4px;
+            font-size: 2rem;
+            font-weight: 900;
+        }
+
+        .stat-card.highlight {
+            background: linear-gradient(135deg, #c0262d, #800000);
+            color: white;
+            border: none;
+        }
+
+        .stat-card.highlight .stat-label { color: #fde68a; }
+
+        .panel {
+            background: white;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #475569;
+            background: #f1f5f9;
+            text-decoration: none;
+        }
+
+        .tab:hover { background: #e2e8f0; }
+
+        .tab.active {
+            background: #c0262d;
+            color: white;
+        }
+
+        .search {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .search input, .search select {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .search input:focus, .search select:focus { border-color: #c0262d; }
+
+        .search button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 8px;
+            background: #c0262d;
+            color: white;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: #f8fafc;
+            padding: 10px 16px;
+            text-align: left;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            border-bottom: 2px solid #e2e8f0;
+        }
+
+        .data-table td {
+            padding: 10px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            font-size: 0.92rem;
+        }
+
+        .data-table tr:hover td { background: #f8fafc; }
+
+        .mono { font-family: Consolas, monospace; }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .status.eligible { background: #ecfdf5; color: #047857; }
+        .status.won { background: #fef9c3; color: #854d0e; border: 1px solid #fde047; }
+
+        .pager {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+        }
+
+        .pager-buttons {
+            display: flex;
+            gap: 6px;
+        }
+
+        .pager a, .pager span.disabled {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 7px 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #334155;
+            text-decoration: none;
+            background: white;
+        }
+
+        .pager a:hover { border-color: #c0262d; color: #c0262d; }
+        .pager span.disabled { opacity: 0.4; }
+
+        .empty {
+            padding: 60px 0;
+            text-align: center;
+            color: #94a3b8;
+            font-style: italic;
+        }
+
+        @@media (max-width: 768px) {
+            .hide-mobile { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <header class="page-header p-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <a href="~/" class="flex items-center gap-4 hover:opacity-80 transition-opacity">
+            <img src="~/img/luckydrawicon.png" alt="Icon" class="h-10 md:h-12">
+            <div>
+                <div class="text-[10px] md:text-xs font-bold uppercase tracking-tight text-gray-500">Minh bạch quay số</div>
+                <div class="text-base md:text-xl font-black text-red-700 uppercase">KHÁCH HÀNG THAM GIA</div>
+            </div>
+        </a>
+        <div class="flex gap-4 md:gap-6 text-sm">
+            <a href="~/" class="flex items-center gap-2 text-gray-600 hover:text-red-700 font-bold transition-colors">
+                <i class="bi bi-grid-fill"></i> <span class="hidden sm:inline">Bảng điều khiển</span>
+            </a>
+            <a href="~/LuckyDraw" class="flex items-center gap-2 text-gray-600 hover:text-red-700 font-bold transition-colors">
+                <i class="bi bi-display"></i> <span class="hidden sm:inline">Trang quay số</span>
+            </a>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto p-4 md:p-8">
+        <!-- Số liệu tổng -->
+        <div class="stat-grid mb-6">
+            <div class="stat-card highlight">
+                <div class="stat-label">Đủ điều kiện quay (chưa trúng)</div>
+                <div class="stat-value">@Model.Stats.Eligible.ToString("N0", vi)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Tổng khách hàng tham gia</div>
+                <div class="stat-value">@Model.Stats.Total.ToString("N0", vi)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Đã trúng giải</div>
+                <div class="stat-value">@Model.Stats.Won.ToString("N0", vi)</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="toolbar">
+                <nav class="tabs">
+                    <a class="tab @(Model.Filter == ParticipantFilter.All ? "active" : "")" href="@FilterUrl("all")">Tất cả</a>
+                    <a class="tab @(Model.Filter == ParticipantFilter.Eligible ? "active" : "")" href="@FilterUrl("eligible")">Đủ điều kiện</a>
+                    <a class="tab @(Model.Filter == ParticipantFilter.Won ? "active" : "")" href="@FilterUrl("won")">Đã trúng giải</a>
+                </nav>
+                <form class="search" method="get" action="@Url.Action("Index")">
+                    <input type="hidden" name="filter" value="@filterKey" />
+                    <input type="search" name="q" value="@Model.Query" maxlength="30" pattern="[A-Za-z0-9\-]*"
+                        title="Mã khách hàng chỉ gồm chữ, số và dấu gạch ngang" placeholder="Tìm theo mã khách hàng..." />
+                    <select name="size" title="Số dòng mỗi trang">
+                        @foreach (var s in new[] { 50, 100, 200 })
+                        {
+                            <option value="@s" selected="@(s == Model.PageSize)">@s dòng</option>
+                        }
+                    </select>
+                    <button type="submit"><i class="bi bi-search"></i> Tìm</button>
+                </form>
+            </div>
+
+            @if (rows.Count == 0)
+            {
+                <div class="empty"><i class="bi bi-people text-3xl block mb-2"></i>Không có khách hàng nào phù hợp.</div>
+            }
+            else
+            {
+                <div style="overflow-x: auto;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 90px">STT</th>
+                                <th>Mã khách hàng</th>
+                                <th>Họ và tên</th>
+                                <th class="hide-mobile">Chi nhánh</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var i = 0; i < rows.Count; i++)
+                            {
+                                var r = rows[i];
+                                <tr>
+                                    <td class="text-slate-400 mono">@((firstNo + i).ToString("N0", vi))</td>
+                                    <td class="mono font-bold">@r.CustomerCode</td>
+                                    <td class="uppercase">@r.Name</td>
+                                    <td class="hide-mobile text-slate-500">@r.Branch</td>
+                                    <td>
+                                        @if (r.RewardName != null)
+                                        {
+                                            <span class="status won" title="@r.WonAt?.ToString("dd/MM/yyyy HH:mm", System.Globalization.CultureInfo.InvariantCulture)"><i class="bi bi-trophy-fill"></i> @r.RewardName</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="status eligible"><i class="bi bi-check-circle-fill"></i> Đủ điều kiện</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <!-- Phân trang keyset: Đầu / Trước / Sau / Cuối -->
+            <div class="pager">
+                <div class="text-sm text-slate-500">
+                    @if (Model.TotalPages != null)
+                    {
+                        <span>Trang <b>@Model.PageNumber.ToString("N0", vi)</b> / @Model.TotalPages.Value.ToString("N0", vi)</span>
+                        <span> &bull; @Model.Page.MatchCount.ToString("N0", vi) khách hàng</span>
+                    }
+                    else
+                    {
+                        <span>Trang <b>@Model.PageNumber.ToString("N0", vi)</b></span>
+                        <span> &bull; hơn @ParticipantService.MaxExactSearchCount.ToString("N0", vi) kết quả, hãy nhập mã cụ thể hơn</span>
+                    }
+                </div>
+                @if (rows.Count > 0)
+                {
+                    // Khóa phân trang: Id, hoặc mã khách hàng khi đang tìm kiếm (khớp với cách sắp xếp ở ParticipantService)
+                    var searching = !string.IsNullOrEmpty(Model.Query);
+                    var firstKey = searching ? rows[0].CustomerCode : rows[0].Id.ToString();
+                    var lastKey = searching ? rows[^1].CustomerCode : rows[^1].Id.ToString();
+                    <div class="pager-buttons">
+                        @if (Model.Page.HasPrevious)
+                        {
+                            <a href="@PageUrl(new { page = 1 })" title="Trang đầu"><i class="bi bi-chevron-double-left"></i></a>
+                            <a href="@PageUrl(new { before = firstKey, page = Model.PageNumber - 1 })"><i class="bi bi-chevron-left"></i> Trước</a>
+                        }
+                        else
+                        {
+                            <span class="disabled"><i class="bi bi-chevron-double-left"></i></span>
+                            <span class="disabled"><i class="bi bi-chevron-left"></i> Trước</span>
+                        }
+                        @if (Model.Page.HasNext)
+                        {
+                            <a href="@PageUrl(new { after = lastKey, page = Model.PageNumber + 1 })">Sau <i class="bi bi-chevron-right"></i></a>
+                            @if (Model.TotalPages != null)
+                            {
+                                <a href="@PageUrl(new { last = true })" title="Trang cuối"><i class="bi bi-chevron-double-right"></i></a>
+                            }
+                        }
+                        else
+                        {
+                            <span class="disabled">Sau <i class="bi bi-chevron-right"></i></span>
+                            <span class="disabled"><i class="bi bi-chevron-double-right"></i></span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </main>
+
+    <footer class="p-8 text-center text-slate-400 text-xs">
+        &copy; 2026 TDbank Lottery Management System
+    </footer>
+</body>
+</html>

@@ -13,8 +13,8 @@ namespace lucky_draw.Models
         public DateTime? TimeStamp { get; set; }
         public int? NumberOfCustomer { get; set; }
 
-        public LuckyProgram Program { get; set; }
-        public Reward Reward { get; set; }
+        public LuckyProgram Program { get; set; } = null!;
+        public Reward Reward { get; set; } = null!;
         public Customer? Customer { get; set; }
     }
 }

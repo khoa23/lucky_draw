@@ -6,12 +6,12 @@ namespace lucky_draw.Models
     public class CustomerInfo
     {
         public int Id { get; set; }
-        public string CustomerCode { get; set; }
-        public string? Cif { get; set; }
-        public string Name { get; set; }
-        public string? Brcd { get; set; }
-        public string? BrcdNm { get; set; }
-        public string? Acctno { get; set; }
+        public string CustomerCode { get; set; } = string.Empty;
+        public string? ClientNo { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string? BranchCode { get; set; }
+        public string? BranchName { get; set; }
+        public string? AccountNo { get; set; }
         public string? IdNo { get; set; }
         public string? AddNo { get; set; }
         public string? TelNo { get; set; }

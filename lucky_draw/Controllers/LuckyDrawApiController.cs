@@ -1,6 +1,5 @@
-using System;
+using System.Security.Claims;
 using lucky_draw.Data;
-using lucky_draw.Models;
 using lucky_draw.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,25 +12,44 @@ namespace lucky_draw.Controllers.Api
     {
         private readonly LuckyDrawDbContext _context;
         private readonly LuckyDrawService _drawService;
+        private readonly ParticipantService _participants;
+        private readonly AuditLogger _audit;
 
-        public LuckyDrawApiController(LuckyDrawDbContext context, LuckyDrawService drawService)
+        public LuckyDrawApiController(LuckyDrawDbContext context, LuckyDrawService drawService, ParticipantService participants,
+            AuditLogger audit)
         {
             _context = context;
             _drawService = drawService;
+            _participants = participants;
+            _audit = audit;
+        }
+
+        // Số khách còn đủ điều kiện quay (chưa trúng giải nào): màn hình quay số khóa nút khi hết người
+        [HttpGet("eligible")]
+        public async Task<IActionResult> GetEligible()
+        {
+            var stats = await _participants.GetStatsAsync();
+            return Ok(new { stats.Eligible });
         }
 
         [HttpGet("programs")]
         public async Task<IActionResult> GetPrograms()
         {
-            var programs = await _context.Programs.ToListAsync();
+            // Màn hình quay số chỉ cần Id và tên chương trình
+            var programs = await _context.Programs
+                .AsNoTracking()
+                .OrderBy(p => p.Id)
+                .Select(p => new { p.Id, p.ProgramName })
+                .ToListAsync();
             return Ok(programs);
         }
 
         [HttpGet("prizes/{programId}")]
         public async Task<IActionResult> GetPrizes(int programId)
         {
-            // Tối ưu hóa việc đếm bằng cách dùng truy vấn đếm trực tiếp
+            // Đếm số người đã trúng bằng 1 truy vấn con (dùng index IX_CustomerReward_RewardId)
             var rewards = await _context.Rewards
+                .AsNoTracking()
                 .Where(r => r.ProgramId == programId)
                 .OrderBy(r => r.Idd)
                 .Select(r => new
@@ -39,29 +57,40 @@ namespace lucky_draw.Controllers.Api
                     r.Id,
                     r.RewardName,
                     r.NumberOfReward,
-                    TotalWins = _context.CustomerReward.Count(cr => cr.RewardId == r.Id),
-                    Remaining = r.NumberOfReward - _context.CustomerReward.Count(cr => cr.RewardId == r.Id)
+                    r.NumberLength,
+                    r.RewardType,
+                    TotalWins = _context.CustomerReward.Count(cr => cr.RewardId == r.Id)
                 })
                 .ToListAsync();
 
-            return Ok(rewards);
+            return Ok(rewards.Select(r => new
+            {
+                r.Id,
+                r.RewardName,
+                r.NumberOfReward,
+                r.NumberLength,
+                r.TotalWins,
+                // Loại giải "Chọn ngẫu nhiên liên tục": 1 lần bấm quay ra tất cả số giải còn lại
+                SpinAll = r.RewardType == LuckyDrawService.ContinuousRandomRewardType,
+                Remaining = Math.Max(0, r.NumberOfReward - r.TotalWins)
+            }));
         }
 
         [HttpGet("winners")]
         public async Task<IActionResult> GetWinners()
         {
-            // Chỉ lấy top 100 người trúng mới nhất để tránh load quá nhiều
+            // Số người trúng bị giới hạn bởi tổng số giải nên không lớn, nhưng vẫn chặn trên để an toàn
             var winners = await _context.CustomerReward
-                .Include(cr => cr.Reward)
+                .AsNoTracking()
                 .OrderByDescending(cr => cr.TimeStamp)
-                .Take(100) 
+                .Take(2000)
                 .Select(cr => new
                 {
                     cr.Id,
                     cr.RewardId,
                     RewardName = cr.Reward.RewardName,
                     cr.ResultCode,
-                    CustomerName = _context.Customers.Where(c => c.Id == cr.CustomerId).Select(c => c.Name).FirstOrDefault(),
+                    CustomerName = cr.Customer != null ? cr.Customer.Name : null,
                     cr.TimeStamp
                 })
                 .ToListAsync();
@@ -70,42 +99,48 @@ namespace lucky_draw.Controllers.Api
         }
 
         [HttpPost("spin")]
-        public async Task<IActionResult> Spin([FromBody] SpinRequest request)
+        public async Task<IActionResult> Spin([FromBody] SpinRequest request, CancellationToken cancellationToken)
         {
-            var reward = await _context.Rewards.FindAsync(request.RewardId);
-            if (reward == null) return NotFound("Reward not found");
+            var result = await _drawService.SpinAsync(request.RewardId, request.RequestId, cancellationToken);
+            await LogSpinAsync(request, result);
 
-            var winsCount = await _context.CustomerReward.CountAsync(cr => cr.RewardId == request.RewardId);
-            if (winsCount >= reward.NumberOfReward)
+            return result.Status switch
             {
-                return BadRequest("No more prizes available for this reward.");
-            }
+                // Chỉ trả mã + tên (không gửi CMND/SĐT ra trình duyệt vì giao diện không hiển thị)
+                SpinStatus.Ok => Ok(new
+                {
+                    result.Winners[0].CustomerCode,
+                    result.Winners[0].Name,
+                    result.RewardName,
+                    result.Winners
+                }),
+                SpinStatus.RewardNotFound => NotFound(result.Message),
+                _ => BadRequest(result.Message)
+            };
+        }
 
-            // Dùng service đã tối ưu cho DB lớn
-            var winner = await _drawService.RandomSequentialAsync(request.RewardId);
-
-            if (winner == null)
-                return BadRequest("No candidates left.");
-
-            // Lưu kết quả
-            await _drawService.SaveWinnerAsync(request.RewardId, winner);
-
-            var info = await _context.CustomerInfos.FirstOrDefaultAsync(x => x.CustomerCode == winner.CustomerCode);
-
-            return Ok(new
-            {
-                winner.CustomerCode,
-                winner.Name,
-                IdNo = info?.IdNo,
-                TelNo = info?.TelNo,
-                RewardName = reward.RewardName
-            });
+        // Nhật ký mỗi lượt quay (Logs/spin-yyyyMMdd.log). Mã lệnh trùng với dòng TriggerSpin trong remote-*.log
+        private Task LogSpinAsync(SpinRequest request, SpinResult result)
+        {
+            var source = string.Equals(request.Source, "remote", StringComparison.OrdinalIgnoreCase) ? "Remote" : "Web";
+            // Dấu "|" là phân cách cột của file nhật ký nên trong phần chi tiết dùng ";"
+            var outcome = result.Status == SpinStatus.Ok
+                ? $"{result.Winners.Count} người trúng: " + string.Join(", ", result.Winners.Select(w => $"{w.CustomerCode} - {w.Name}"))
+                : "Không quay được: " + result.Message;
+            var detail = $"Nguồn: {source}; Giải: {result.RewardName ?? "#" + request.RewardId} (#{request.RewardId})" +
+                         $"; Mã lệnh: {request.RequestId}" +
+                         (result.FromCache ? "; Kết quả có sẵn (màn hình khác đã quay cùng lệnh, không quay thêm)" : "") +
+                         $"; {outcome}";
+            return _audit.LogAsync(AuditLogs.Spin, AuditEvents.Spin, HttpContext,
+                User.FindFirst(ClaimTypes.Role)?.Value, detail);
         }
     }
 
     public class SpinRequest
     {
         public int RewardId { get; set; }
+        public string? RequestId { get; set; }
+        public string? Source { get; set; } // "web": bấm trên màn hình quay, "remote": lệnh từ Remote
     }
 }
 

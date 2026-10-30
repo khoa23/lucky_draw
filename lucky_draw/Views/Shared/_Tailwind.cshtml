@@ -1,0 +1,9 @@
+@inject lucky_draw.Services.FrontendAssets Assets
+@if (Assets.HasTailwindCss)
+{
+    <link rel="stylesheet" href="~/css/tailwind.css" />
+}
+else
+{
+    <script src="~/lib/tailwind/tailwindcss.js"></script>
+}

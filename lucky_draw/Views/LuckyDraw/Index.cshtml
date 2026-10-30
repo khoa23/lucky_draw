@@ -1,20 +1,20 @@
-@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@inject lucky_draw.Services.FrontendAssets Assets
 @{
     Layout = null;
-    var baseUrl = Configuration["BaseUrl"] ?? Url.Content("~/");
+    // Đường dẫn gốc lấy theo nơi ứng dụng đang chạy (ứng dụng con trên IIS hay chạy trực tiếp), không gán cứng
+    var baseUrl = Url.Content("~/");
 }
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chương trình quay số may mắn</title>
     <link rel="icon" type="image/png" href="~/img/luckydrawicon.png">
-    <!-- Local Assets -->
-    <script src="~/lib/tailwind/tailwindcss.js"></script>
-    <script src="~/lib/vue/vue.global.js"></script>
+    <!-- Local Assets: trang này dùng CSS riêng, không cần Tailwind => tải nhanh, nhẹ cho máy yếu -->
+    <script src="@Url.Content(Assets.VueScript)"></script>
     <script src="~/lib/axios/axios.min.js"></script>
     <link rel="stylesheet" href="~/lib/animate.css/animate.min.css" />
 
@@ -30,416 +30,980 @@
         }
 
         :root {
-            --agri-red: #c0262d;
-            --agri-gold: #fef08a;
-            --agri-dark: #800000;
+            --red-900: #4a070b;
+            --red-800: #6e0d13;
+            --red-700: #95141c;
+            --red-600: #c0262d;
+            --gold-300: #ffe9a3;
+            --gold-400: #fcd770;
+            --gold-500: #f2b632;
+            --gold-700: #a8740c;
+            --cream: #fffaf0;
+            --ink: #2b0a0c;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+            margin: 0;
+            height: 100%;
         }
 
         body {
-            font-family: 'Roboto', sans-serif;
-            background: radial-gradient(circle at center, #c0262d 0%, #800000 100%);
+            font-family: 'Roboto', 'Segoe UI', sans-serif;
             color: white;
-            height: 100vh;
-            width: 100vw;
-            margin: 0;
             overflow: hidden;
+            background:
+                radial-gradient(ellipse 70% 55% at 50% 45%, rgba(255, 190, 80, 0.18) 0%, transparent 70%),
+                radial-gradient(circle at 50% 40%, var(--red-700) 0%, var(--red-800) 45%, var(--red-900) 100%);
         }
+
+        button, select { font: inherit; }
+        button { cursor: pointer; }
 
         #app {
             height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow: hidden;
         }
 
-        .agribank-header {
-            background: white;
-            color: var(--agri-red);
-            padding: 0.8rem 2rem;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
-            border-bottom: 4px solid var(--agri-gold);
-        }
-
-        .prize-tabs-container {
-            background: rgba(0, 0, 0, 0.2);
-            padding: 10px;
+        /* ===== Header ===== */
+        .topbar {
             display: flex;
-            justify-content: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 10px 28px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.1));
+            border-bottom: 1px solid rgba(252, 215, 112, 0.25);
             flex-shrink: 0;
         }
 
-        .prize-tab {
-            background: transparent;
-            border: 2px solid var(--agri-gold);
-            color: var(--agri-gold);
-            padding: 8px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            text-transform: uppercase;
-            transition: all 0.2s ease;
-            min-width: 150px;
-            text-align: center;
-        }
-
-        .prize-tab:hover {
-            background: rgba(254, 240, 138, 0.1);
-        }
-
-        .prize-tab.active {
-            background: var(--agri-gold);
-            color: var(--agri-red);
-            box-shadow: 0 0 15px rgba(254, 240, 138, 0.4);
-        }
-
-        .main-stage {
-            flex: 1;
-            width: 100%;
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 10px 20px;
+        .brand {
             display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            justify-content: center;
+            align-items: center;
+            gap: 14px;
+            color: inherit;
+            text-decoration: none;
         }
 
-        .led-screen {
-            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
-            border: 8px solid #ca8a04;
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-            position: relative;
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            max-height: 85vh;
-        }
-
-        .lucky-numbers {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 20px 0;
-        }
-
-        .digit-box {
+        .brand img {
+            height: 44px;
             background: white;
-            color: #d32f2f;
-            width: 6vw;
-            max-width: 75px;
-            height: 10vh;
-            max-height: 100px;
+            border-radius: 10px;
+            padding: 4px;
+        }
+
+        .brand-sub {
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--gold-300);
+            opacity: 0.85;
+        }
+
+        .brand-name {
+            font-size: 1.15rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        /* Nút loa bật/tắt âm thanh */
+        .sound-toggle {
+            width: 42px;
+            height: 42px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3.5rem;
-            font-weight: 900;
-            border-radius: 6px;
-            box-shadow: 0 6px 0 #999, inset 0 0 15px rgba(0, 0, 0, 0.1);
-            font-family: 'Orbitron', sans-serif;
+            padding: 0;
+            border-radius: 50%;
+            border: 1px solid var(--gold-500);
+            background: rgba(0, 0, 0, 0.35);
+            color: var(--gold-300);
         }
 
-        .winner-panel {
-            background: #fef08a;
-            color: #1e3a8a;
-            max-width: 700px;
-            margin: 20px auto 0;
-            padding: 15px 30px;
-            border-radius: 8px;
-            text-align: left;
-            box-shadow: 10px 10px 0px rgba(30, 58, 138, 0.2);
-            position: relative;
-            animation: slideUp 0.5s ease-out;
-        }
-        
-        .winners-scroll-area {
-            flex: 1;
-            overflow-y: auto;
-            padding-right: 10px;
-        }
-        .winners-scroll-area::-webkit-scrollbar {
-            width: 6px;
-        }
-        .winners-scroll-area::-webkit-scrollbar-thumb {
-            background: rgba(254, 240, 138, 0.3);
-            border-radius: 3px;
+        .sound-toggle:hover { background: rgba(252, 215, 112, 0.15); }
+
+        .sound-toggle svg {
+            width: 22px;
+            height: 22px;
         }
 
-        @@keyframes slideUp {
-            from {
-                transform: translateY(50px);
-                opacity: 0;
-            }
-
-            to {
-                transform: translateY(0);
-                opacity: 1;
-            }
+        .sound-toggle.muted {
+            color: rgba(255, 255, 255, 0.55);
+            border-color: rgba(255, 255, 255, 0.35);
         }
 
-        .spin-button {
-            background: var(--agri-gold);
-            color: var(--agri-red);
-            font-size: 1.5rem;
-            font-weight: 900;
-            padding: 10px 50px;
-            border-radius: 50px;
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 6px 0 #ca8a04;
-            transition: all 0.1s;
+        .program-picker {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.8rem;
             text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gold-300);
+        }
+
+        .program-picker select {
+            background: rgba(0, 0, 0, 0.35);
+            color: white;
+            border: 1px solid var(--gold-500);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-weight: 700;
+            outline: none;
+        }
+
+        .program-picker option { color: var(--ink); }
+
+        /* ===== Thanh chọn giải ===== */
+        .prize-bar {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 12px 20px;
+            flex-shrink: 0;
+        }
+
+        .prize-chip {
+            background: rgba(0, 0, 0, 0.25);
+            color: var(--gold-300);
+            border: 1px solid rgba(252, 215, 112, 0.45);
+            border-radius: 999px;
+            padding: 8px 18px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .prize-chip:hover { background: rgba(252, 215, 112, 0.12); }
+
+        .prize-chip.active {
+            background: linear-gradient(180deg, var(--gold-300), var(--gold-500));
+            color: var(--red-800);
+            border-color: var(--gold-300);
+            box-shadow: 0 4px 14px rgba(242, 182, 50, 0.35);
+        }
+
+        .prize-chip.done { opacity: 0.55; }
+
+        .prize-chip.list-chip {
+            border-style: dashed;
+            color: white;
+        }
+
+        /* ===== Sân khấu quay ===== */
+        .stage {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 24px 16px;
+            overflow: hidden;
+        }
+
+        .stage-eyebrow {
+            font-size: clamp(1.2rem, 2vw, 2rem);
+            font-weight: 700;
+            letter-spacing: 0.4em;
+            text-transform: uppercase;
+            color: var(--gold-300);
+            margin-bottom: 4px;
+        }
+
+        .stage-program {
+            font-size: clamp(1.4rem, 2.4vw, 2.4rem);
+            font-weight: 700;
+            font-style: italic;
+            opacity: 0.95;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .reward-title {
+            margin: 0 0 clamp(12px, 2.5vh, 28px);
+            font-size: clamp(2rem, 4.6vw, 4.6rem);
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            line-height: 1.05;
+            text-align: center;
+            color: var(--gold-400);
+            text-shadow: 0 3px 0 var(--gold-700), 0 8px 24px rgba(0, 0, 0, 0.45);
+        }
+
+        /* Số giải còn lại, luôn ở góc phải */
+        .remaining-badge {
+            position: absolute;
+            top: 12px;
+            right: 28px;
+            min-width: 150px;
+            padding: 10px 18px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.35);
+            border: 2px solid var(--gold-500);
+            border-radius: 14px;
+            line-height: 1.1;
+        }
+
+        .remaining-label {
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: 0.85;
+        }
+
+        .remaining-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.8rem, 3vw, 2.8rem);
+            font-weight: 900;
+            color: var(--gold-400);
+        }
+
+        .remaining-total {
+            font-size: 0.45em;
+            opacity: 0.8;
+        }
+
+        .remaining-badge.empty {
+            border-color: rgba(255, 255, 255, 0.35);
+        }
+
+        .remaining-badge.empty .remaining-value { color: rgba(255, 255, 255, 0.6); }
+
+        /* Khung máy quay số */
+        .machine {
+            position: relative;
+            padding: 6px;
+            border-radius: 26px;
+            background: linear-gradient(180deg, var(--gold-300) 0%, var(--gold-500) 45%, var(--gold-700) 100%);
+            box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55);
+            max-width: 100%;
+        }
+
+        .machine-inner {
+            border-radius: 20px;
+            padding: clamp(14px, 2.4vh, 26px) clamp(14px, 2vw, 30px);
+            background: linear-gradient(180deg, #2a0306 0%, #50080d 100%);
+            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.7);
+        }
+
+        /* Dải đèn chạy: 1 phần tử với nền chấm tròn, chỉ đổi vị trí nền => rất nhẹ */
+        .lights {
+            height: 12px;
+            margin: 0 12px;
+            background: radial-gradient(circle, var(--gold-300) 0 3px, rgba(255, 233, 163, 0.25) 4px, transparent 5px) 0 50% / 24px 12px repeat-x;
+            opacity: 0.55;
+        }
+
+        .lights.top { margin-bottom: clamp(10px, 1.8vh, 18px); }
+        .lights.bottom { margin-top: clamp(10px, 1.8vh, 18px); }
+
+        .lights.on {
+            opacity: 1;
+            animation: chase 0.35s steps(2) infinite;
+        }
+
+        @@keyframes chase {
+            to { background-position: 24px 50%; }
+        }
+
+        .digits {
+            display: flex;
+            justify-content: center;
+            gap: clamp(6px, 0.8vw, 14px);
+        }
+
+        .digit {
+            position: relative;
+            width: clamp(46px, 6.4vw, 112px);
+            height: clamp(70px, 15vh, 150px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            background: linear-gradient(180deg, #ffffff 0%, var(--cream) 48%, #efe2c4 52%, #fffdf7 100%);
+            box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.12), inset 0 6px 10px rgba(0, 0, 0, 0.18), 0 4px 0 #7a5208;
+            color: var(--red-600);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2.2rem, 5.2vw, 5.6rem);
+            overflow: hidden;
+        }
+
+        /* Vạch kính ngang giữa ô số */
+        .digit::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 2px;
+            background: rgba(0, 0, 0, 0.08);
+        }
+
+        .digit.rolling span {
+            display: block;
+            animation: roll 0.12s linear infinite;
+            will-change: transform;
+            opacity: 0.85;
+        }
+
+        @@keyframes roll {
+            0% { transform: translateY(-18%); }
+            50% { transform: translateY(18%); }
+            100% { transform: translateY(-18%); }
+        }
+
+        .digit.locked {
+            animation: lock 0.35s ease-out;
+        }
+
+        @@keyframes lock {
+            0% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .machine.win {
+            animation: win-glow 0.9s ease-in-out 4;
+        }
+
+        @@keyframes win-glow {
+            0%, 100% { box-shadow: 0 22px 50px rgba(0, 0, 0, 0.55); }
+            50% { box-shadow: 0 0 0 6px rgba(255, 233, 163, 0.5), 0 0 60px rgba(252, 215, 112, 0.8); }
+        }
+
+        /* Khu vực dưới dãy số: người trúng + nút quay.
+           Kích thước tính theo chỗ trống của màn hình (flex-basis 0), KHÔNG theo nội dung
+           => tên giải và khung số không bị xê dịch khi thẻ người trúng / danh sách hiện ra hay ẩn đi */
+        .below {
+            margin-top: clamp(14px, 3vh, 32px);
+            flex: 1 1 0;
+            min-height: 0;
+            max-height: 420px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(10px, 2vh, 20px);
+        }
+
+        /* Ô hiển thị kết quả: chiếm phần còn lại phía trên nút quay; nội dung dài thì cuộn bên trong */
+        .result-slot {
+            flex: 1 1 auto;
+            min-height: 0;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .spin-button { flex-shrink: 0; }
+
+        /* Danh sách người trúng khi quay tất cả 1 lần */
+        .batch-panel {
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            max-height: 100%;
+            width: min(1100px, 92vw);
+            padding: 12px 16px 14px;
+            border-radius: 16px;
+            background: linear-gradient(180deg, var(--gold-300) 0%, var(--gold-400) 100%);
+            color: var(--ink);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+        }
+
+        .batch-title {
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: clamp(0.95rem, 1.4vw, 1.2rem);
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--red-700);
+        }
+
+        .batch-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 8px;
+            flex: 1 1 auto;
+            min-height: 0;
+            margin: 0;
+            padding: 0 4px 0 0;
+            list-style: none;
+            overflow-y: auto;
+        }
+
+        .batch-list li {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.65);
+            animation: batch-item-in 0.35s ease-out both;
+        }
+
+        @@keyframes batch-item-in {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .batch-no {
+            flex-shrink: 0;
+            min-width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            background: var(--red-700);
+            color: white;
+            font-size: 0.8rem;
+            font-weight: 900;
+        }
+
+        .batch-info {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            line-height: 1.25;
+        }
+
+        .batch-name {
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .batch-code {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--red-700);
+        }
+
+        .winner-card {
+            position: relative;
+            min-width: min(640px, 90vw);
+            padding: 14px 36px 16px;
+            text-align: center;
+            color: var(--ink);
+            border-radius: 16px;
+            background: linear-gradient(180deg, var(--gold-300) 0%, var(--gold-400) 100%);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+            overflow: hidden;
+        }
+
+        /* Vệt sáng lướt qua thẻ người trúng (chỉ chạy 1 lần) */
+        .winner-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 40%;
+            left: -50%;
+            background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+            animation: shine 1.4s ease-out 0.3s 1 forwards;
+        }
+
+        @@keyframes shine {
+            to { left: 120%; }
+        }
+
+        .winner-congrats {
+            font-size: clamp(0.85rem, 1.2vw, 1.05rem);
+            font-weight: 900;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--red-700);
+        }
+
+        .winner-name {
+            margin: 4px 0 2px;
+            font-size: clamp(1.6rem, 3vw, 2.6rem);
+            font-weight: 900;
+            text-transform: uppercase;
+            line-height: 1.15;
+        }
+
+        .winner-code {
+            font-size: clamp(0.95rem, 1.4vw, 1.25rem);
+            opacity: 0.8;
+        }
+
+        /* Orbitron không có dấu tiếng Việt => chỉ dùng cho phần số */
+        .winner-code span {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 700;
             letter-spacing: 2px;
         }
 
-        .spin-button:active {
-            transform: translateY(4px);
-            box-shadow: 0 4px 0 #ca8a04;
+        .spin-button {
+            min-width: 280px;
+            padding: clamp(12px, 2vh, 18px) 56px;
+            border: none;
+            border-radius: 999px;
+            background: linear-gradient(180deg, var(--gold-300) 0%, var(--gold-500) 100%);
+            color: var(--red-800);
+            font-size: clamp(1.3rem, 2vw, 1.9rem);
+            font-weight: 900;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            box-shadow: 0 7px 0 var(--gold-700), 0 14px 28px rgba(0, 0, 0, 0.45);
+            transition: transform 0.08s, box-shadow 0.08s;
+        }
+
+        .spin-button:hover:not(:disabled) { filter: brightness(1.06); }
+
+        .spin-button:active:not(:disabled) {
+            transform: translateY(5px);
+            box-shadow: 0 2px 0 var(--gold-700), 0 6px 14px rgba(0, 0, 0, 0.45);
         }
 
         .spin-button:disabled {
-            background: #a1a1aa;
-            box-shadow: 0 8px 0 #71717a;
             cursor: not-allowed;
-            color: #52525b;
+            background: linear-gradient(180deg, #d6d3d1, #a8a29e);
+            color: #57534e;
+            box-shadow: 0 7px 0 #78716c;
         }
 
-        .scrolling {
-            animation: scrollDigit 0.05s infinite;
+        .spin-button.spinning:disabled {
+            background: linear-gradient(180deg, var(--gold-300) 0%, var(--gold-500) 100%);
+            color: var(--red-800);
+            box-shadow: 0 7px 0 var(--gold-700);
+            opacity: 0.85;
         }
 
-        @@keyframes scrollDigit {
-            0% {
-                transform: translateY(-3px);
-            }
-
-            50% {
-                transform: translateY(3px);
-            }
-
-            100% {
-                transform: translateY(-3px);
-            }
+        .welcome {
+            text-align: center;
+            opacity: 0.9;
         }
 
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
+        .welcome-title {
+            font-size: clamp(2rem, 4vw, 3.6rem);
+            font-weight: 900;
+            color: var(--gold-400);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .welcome-hint {
+            font-size: clamp(1rem, 1.5vw, 1.3rem);
+            opacity: 0.8;
+        }
+
+        /* Pháo giấy khi có người trúng: ít phần tử, chỉ dùng transform/opacity => nhẹ cho máy yếu */
+        .confetti {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .confetti i {
+            position: absolute;
+            top: -20px;
+            width: 10px;
+            height: 16px;
+            border-radius: 2px;
+            opacity: 0;
+            animation-name: fall;
+            animation-timing-function: ease-in;
+            animation-fill-mode: forwards;
+        }
+
+        @@keyframes fall {
+            0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+            100% { opacity: 0.2; transform: translateY(105vh) rotate(var(--spin)); }
+        }
+
+        /* ===== Danh sách trúng giải ===== */
+        .winners-view {
+            flex: 1;
+            min-height: 0;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 8px 24px 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .winners-panel {
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(252, 215, 112, 0.25);
+            border-radius: 18px;
+            padding: 20px 24px;
+        }
+
+        .winners-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .winners-head h2 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: var(--gold-400);
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.12);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: 999px;
+            padding: 6px 18px;
+            font-weight: 700;
+        }
+
+        .back-button:hover { background: rgba(255, 255, 255, 0.2); }
+
+        .winners-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .winners-scroll::-webkit-scrollbar { width: 6px; }
+        .winners-scroll::-webkit-scrollbar-thumb {
+            background: rgba(252, 215, 112, 0.35);
+            border-radius: 3px;
+        }
+
+        .winner-group + .winner-group { margin-top: 28px; }
+
+        .winner-group h3 {
+            margin: 0 0 10px;
+            padding-left: 12px;
+            border-left: 4px solid var(--gold-400);
+            font-size: 1.2rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            color: var(--gold-300);
         }
 
         .winners-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 20px;
-            color: white;
         }
 
         .winners-table th {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 15px;
             text-align: left;
-            border-bottom: 2px solid var(--agri-gold);
+            padding: 10px 14px;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--gold-300);
+            background: rgba(255, 255, 255, 0.06);
+            border-bottom: 2px solid rgba(252, 215, 112, 0.5);
         }
 
         .winners-table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding: 10px 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
         }
 
+        .winners-table .code {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--gold-300);
+            letter-spacing: 1px;
+        }
+
+        .winners-table .name { text-transform: uppercase; font-weight: 700; }
+        .winners-table .time { font-size: 0.85rem; opacity: 0.6; }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px 0;
+            opacity: 0.6;
+        }
+
+        .footer {
+            padding: 6px;
+            text-align: center;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            color: rgba(255, 255, 255, 0.35);
+            flex-shrink: 0;
+        }
+
+        /* ===== Thông báo lỗi ===== */
         .error-overlay {
-            background: rgba(0, 0, 0, 0.85);
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            inset: 0;
             z-index: 9999;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.85);
         }
 
         .error-card {
-            background: white;
-            color: #d32f2f;
-            padding: 40px;
-            border-radius: 20px;
-            text-align: center;
-            max-width: 450px;
             width: 90%;
-            border-top: 10px solid #ca8a04;
+            max-width: 460px;
+            padding: 36px 32px;
+            text-align: center;
+            color: var(--red-600);
+            background: white;
+            border-radius: 20px;
+            border-top: 10px solid var(--gold-500);
             box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .error-icon { font-size: 3rem; margin-bottom: 14px; }
+
+        .error-title {
+            margin: 0 0 10px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+
+        .error-text {
+            margin: 0 0 26px;
+            color: #374151;
+            font-size: 1.15rem;
+            line-height: 1.5;
+        }
+
+        .error-close {
+            border: none;
+            border-radius: 999px;
+            padding: 12px 44px;
+            background: #b91c1c;
+            color: white;
+            font-weight: 900;
+        }
+
+        .error-close:hover { background: #991b1b; }
+
+        /* Màn hình thấp (laptop 768px): thu gọn để không bị tràn */
+        @@media (max-height: 760px) {
+            .topbar { padding: 6px 20px; }
+            .brand img { height: 36px; }
+            .prize-bar { padding: 8px 16px; }
+            .prize-chip { padding: 6px 14px; }
+            .remaining-badge { top: 6px; min-width: 120px; padding: 6px 12px; }
+
+            /* Thu nhỏ cố định phần trên để luôn đủ chỗ cho thẻ người trúng và nút quay */
+            .stage-eyebrow { font-size: 0.95rem; margin-bottom: 0; }
+            .stage-program { font-size: 1.15rem; margin-bottom: 2px; }
+            .reward-title { font-size: clamp(1.8rem, 3.6vw, 2.6rem); margin-bottom: 10px; }
+            .digit { height: clamp(60px, 12vh, 92px); font-size: clamp(2rem, 4.4vw, 3.6rem); }
+            .machine-inner { padding-top: 10px; padding-bottom: 10px; }
+            .lights.top { margin-bottom: 8px; }
+            .lights.bottom { margin-top: 8px; }
+            .below { margin-top: 12px; gap: 10px; }
+            .winner-card { padding: 10px 28px 12px; }
+            .winner-name { font-size: clamp(1.4rem, 2.6vw, 2rem); }
+            .spin-button { padding: 10px 48px; font-size: 1.3rem; }
         }
     </style>
 </head>
 
 <body>
+    <!-- Token chống CSRF cho các request POST bằng axios -->
+    @Html.AntiForgeryToken()
     <div id="app">
-        <!-- Global Error Notification Overlay -->
+        <!-- Thông báo lỗi -->
         <div v-if="errorMessage" class="error-overlay animate__animated animate__fadeIn">
             <div class="error-card animate__animated animate__zoomIn">
-                <div class="text-5xl mb-6">⚠️</div>
-                <h3 class="text-2xl font-black uppercase mb-3 tracking-tight">Thông báo hệ thống</h3>
-                <p class="text-gray-700 text-lg mb-8 leading-relaxed">
-                    {{ errorMessage === 'No candidates left.' ? 'Đã hết lượt quay cho giải thưởng này!' : errorMessage
-                    }}
-                </p>
-                <button @@click="errorMessage = null"
-                    class="bg-red-700 text-white px-12 py-3 rounded-full font-black hover:bg-red-800 transition-all transform hover:scale-105 shadow-lg">
-                    ĐÓNG THÔNG BÁO
-                </button>
+                <div class="error-icon">⚠️</div>
+                <h3 class="error-title">Thông báo hệ thống</h3>
+                <p class="error-text">{{ errorMessage }}</p>
+                <button @@click="errorMessage = null" class="error-close">ĐÓNG THÔNG BÁO</button>
             </div>
         </div>
 
         <!-- Header -->
-        <header class="agribank-header flex justify-between items-center">
-            <a href="~/" class="flex items-center gap-6 hover:opacity-80 transition-opacity">
-                <img src="~/img/luckydrawicon.png" alt="TDbank" class="h-12">
-                <div class="border-l-2 border-red-600 pl-6">
-                    <div class="text-xs font-bold uppercase tracking-tight">Ngân hàng Thanh Đa</div>
-                    <div class="text-xl font-black text-red-700">Hội sở</div>
+        <header class="topbar">
+            <a href="~/" class="brand">
+                <img src="~/img/luckydrawicon.png" alt="TDbank">
+                <div>
+                    <div class="brand-sub">Ngân hàng Thanh Đa</div>
+                    <div class="brand-name">Hội sở</div>
                 </div>
             </a>
-            <div class="flex gap-4 items-center">
-                <span class="text-red-700 font-bold uppercase text-sm">Chương trình:</span>
-                <select v-model="selectedProgram" @@change="fetchPrizes"
-                    class="bg-red-50 border-2 border-red-200 text-red-800 font-extrabold rounded-lg px-4 py-2 outline-none focus:border-red-500">
-                    <option v-for="p in programs" :key="p.id" :value="p.id">{{ p.programName }}</option>
-                </select>
+            <div class="topbar-right">
+                <label class="program-picker">
+                    Chương trình
+                    <select v-model="selectedProgram" @@change="fetchPrizes" :disabled="isSpinning">
+                        <option v-for="p in programs" :key="p.id" :value="p.id">{{ p.programName }}</option>
+                    </select>
+                </label>
+                <button @@click="toggleMute" class="sound-toggle" :class="{ muted: isMuted }"
+                    :title="isMuted ? 'Bật âm thanh' : 'Tắt âm thanh'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M11 5 6 9H2v6h4l5 4V5z" fill="currentColor" />
+                        <template v-if="isMuted">
+                            <line x1="16" y1="9" x2="22" y2="15" />
+                            <line x1="22" y1="9" x2="16" y2="15" />
+                        </template>
+                        <template v-else>
+                            <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                            <path d="M18.5 5.5a9 9 0 0 1 0 13" />
+                        </template>
+                    </svg>
+                </button>
             </div>
         </header>
 
-        <!-- Prize Tabs -->
-        <div class="prize-tabs-container no-scrollbar">
-            <button v-for="reward in prizes" :key="reward.id" @@click="selectPrize(reward)"
-                :class="{'active': activeTab === 'draw' && selectedReward?.id === reward.id}" class="prize-tab">
+        <!-- Chọn giải -->
+        <nav class="prize-bar">
+            <button v-for="reward in prizes" :key="reward.id" @@click="selectPrize(reward)" :disabled="isSpinning"
+                :class="{ active: activeTab === 'draw' && selectedReward?.id === reward.id, done: reward.remaining <= 0 }"
+                class="prize-chip">
                 {{ reward.rewardName }}
             </button>
-            <button @@click="activeTab = 'winners'; fetchWinners();" :class="{'active': activeTab === 'winners'}"
-                class="prize-tab">
-                DANH SÁCH TRÚNG GIẢI
+            <button @@click="activeTab = 'winners'; fetchWinners();" :disabled="isSpinning"
+                :class="{ active: activeTab === 'winners' }" class="prize-chip list-chip">
+                Danh sách trúng giải
             </button>
-        </div>
+        </nav>
 
-        <main class="main-stage">
-            <!-- Drawing View -->
-            <div v-if="activeTab === 'draw'" class="animate__animated animate__fadeIn flex flex-col h-full">
-                <div class="mb-4">
-                    <h2
-                        class="text-2xl md:text-4xl font-black text-center text-yellow-300 uppercase tracking-tighter drop-shadow-lg">
-                        LỄ QUAY THƯỞNG
-                    </h2>
-                    <p class="text-center text-white italic text-lg opacity-90">"{{ selectedProgramName }}"</p>
+        <!-- Sân khấu quay -->
+        <main v-if="activeTab === 'draw'" class="stage">
+            <template v-if="selectedReward">
+                <!-- Số giải còn lại, luôn hiển thị ở góc phải -->
+                <div class="remaining-badge" :class="{ empty: selectedReward.remaining <= 0 }">
+                    <div class="remaining-label">Còn lại</div>
+                    <div class="remaining-value">
+                        {{ selectedReward.remaining }}<span class="remaining-total"> / {{ selectedReward.numberOfReward }}</span>
+                    </div>
                 </div>
 
-                <div v-if="selectedReward" class="led-screen text-center">
+                <div class="stage-eyebrow">Lễ quay thưởng</div>
+                <div class="stage-program">{{ selectedProgramName }}</div>
+                <h1 class="reward-title">{{ selectedReward.rewardName }}</h1>
 
-                    <div class="lucky-numbers">
-                        <div v-for="(digit, index) in codeDigits" :key="index" class="digit-box"
-                            :class="{'scrolling': isSpinning}">
-                            {{ digit }}
-                        </div>
-                    </div>
-
-                    <div v-if="lastWinner"
-                        class="text-yellow-200 font-black text-2xl uppercase tracking-widest mb-4 drop-shadow-md">
-                        CHÚC MỪNG KHÁCH HÀNG ĐÃ TRÚNG THƯỞNG {{ selectedReward.rewardName }}
-                    </div>
-                    <div v-else class="text-white/80 mb-6 text-lg">
-                        Loại giải: <span class="text-yellow-300 font-bold uppercase text-xl">{{
-                            selectedReward.rewardName }}</span> |
-                        Còn lại: <span class="text-yellow-300 font-bold text-xl">{{ selectedReward.remaining }}</span> /
-                        {{ selectedReward.numberOfReward }}
-                    </div>
-
-                    <div class="mt-8">
-                        <button @@click="startSpin" :disabled="isSpinning || selectedReward.remaining <= 0"
-                            class="spin-button">
-                            {{ isSpinning ? 'Đang quay...' : 'QUAY SỐ' }}
-                        </button>
-                    </div>
-
-                    <!-- Winner Info Card (Agribank Style) -->
-                    <div v-if="lastWinner" class="winner-panel">
-                        <div class="text-blue-900 border-b-2 border-blue-900/20 pb-3 mb-4 font-black tracking-wider">
-                            THÔNG TIN KHÁCH HÀNG TRÚNG THƯỞNG
-                        </div>
-                        <div class="space-y-4 text-xl">
-                            <div class="flex gap-2">Mã khách hàng: <span
-                                    class="font-black font-orbitron tracking-wider">{{ lastWinner.customerCode }}</span>
-                            </div>
-                            <div class="flex gap-2">Tên khách hàng: <span class="font-black uppercase">{{
-                                    lastWinner.name }}</span></div>
-                            <div v-if="lastWinner.idNo" class="flex gap-2 text-sm opacity-80 mt-4 italic">
-                                Chúc mừng quý khách đã may mắn nhận được giải thưởng từ TDbank.
+                <!-- Dãy số ở giữa -->
+                <div class="machine" :class="{ win: currentWinner && !isRolling }">
+                    <div class="machine-inner">
+                        <div class="lights top" :class="{ on: isRolling }"></div>
+                        <div class="digits">
+                            <div v-for="(digit, index) in codeDigits" :key="index" class="digit"
+                                :class="{ rolling: isRolling && index >= lockedCount, locked: index < lockedCount }">
+                                <span>{{ digit }}</span>
                             </div>
                         </div>
+                        <div class="lights bottom" :class="{ on: isRolling }"></div>
                     </div>
                 </div>
 
-                <div v-else class="text-center py-40 opacity-50">
-                    <div class="text-4xl font-black text-yellow-300 mb-4 uppercase">CHÀO MỪNG QUÝ KHÁCH</div>
-                    <p class="text-xl">Vui lòng chọn một hạng mục giải thưởng phía trên để bắt đầu.</p>
-                </div>
-            </div>
-
-            <!-- Winners View -->
-            <div v-if="activeTab === 'winners'" class="animate__animated animate__fadeIn h-full flex flex-col">
-                <div class="bg-black/30 p-6 rounded-xl border border-white/10 backdrop-blur-lg h-full flex flex-col overflow-hidden">
-                    <div class="flex justify-between items-center mb-6 flex-shrink-0">
-                        <h2 class="text-2xl font-black text-yellow-300 uppercase">DANH SÁCH KHÁCH HÀNG TRÚNG THƯỞNG</h2>
-                        <button @@click="activeTab = 'draw'"
-                            class="text-white bg-white/20 px-4 py-1 rounded hover:bg-white/30 transition-colors">Quay
-                            lại</button>
-                    </div>
-                    
-                    <div class="winners-scroll-area">
-
-                    <div v-if="winnersList.length === 0" class="text-center py-20 opacity-50">
-                        Chưa có dữ liệu người trúng giải.
-                    </div>
-
-                    <div v-else class="space-y-10">
-                        <div v-for="group in groupedWinners" :key="group.rewardId">
-                            <h3
-                                class="text-yellow-300 font-black text-xl mb-4 border-l-4 border-yellow-300 pl-4 uppercase">
-                                {{ group.rewardName }}</h3>
-                            <div class="overflow-x-auto">
-                                <table class="winners-table">
-                                    <thead>
-                                        <tr>
-                                            <th>STT</th>
-                                            <th>Mã Khách Hàng</th>
-                                            <th>Tên Khách Hàng</th>
-                                            <th>Thời Gian</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="(w, idx) in group.winners" :key="w.id">
-                                            <td>{{ idx + 1 }}</td>
-                                            <td class="font-bold text-yellow-200">{{ w.resultCode }}</td>
-                                            <td class="uppercase">{{ w.customerName }}</td>
-                                            <td class="text-sm opacity-60">{{ formatDate(w.timeStamp) }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
+                <div class="below">
+                    <div class="result-slot">
+                    <!-- Loại giải quay tất cả: hiện danh sách toàn bộ người trúng của lượt quay -->
+                    <div v-if="showBatch" class="batch-panel animate__animated animate__fadeIn">
+                        <div class="batch-title">
+                            Chúc mừng {{ lastWinner.winners.length }} khách hàng trúng {{ lastWinner.rewardName || selectedReward.rewardName }}
                         </div>
+                        <ol class="batch-list">
+                            <li v-for="(w, i) in lastWinner.winners" :key="i" :style="{ animationDelay: Math.min(i, 30) * 40 + 'ms' }">
+                                <span class="batch-no">{{ i + 1 }}</span>
+                                <span class="batch-info">
+                                    <span class="batch-name">{{ w.name }}</span>
+                                    <span class="batch-code">{{ w.customerCode }}</span>
+                                </span>
+                            </li>
+                        </ol>
                     </div>
+
+                    <!-- Người trúng vừa dừng số (quay tất cả: lần lượt từng người) -->
+                    <div v-else-if="currentWinner" :key="currentWinner.no" class="winner-card animate__animated animate__zoomIn">
+                        <div class="winner-congrats">
+                            <template v-if="currentWinner.total > 1">Khách hàng trúng {{ selectedReward.rewardName }}</template>
+                            <template v-else>Chúc mừng khách hàng trúng {{ selectedReward.rewardName }}</template>
+                        </div>
+                        <div class="winner-name">{{ currentWinner.name }}</div>
+                        <div class="winner-code">Mã khách hàng: <span>{{ currentWinner.customerCode }}</span></div>
+                    </div>
+                    </div>
+
+                    <button @@click="startSpin()" :disabled="isSpinning || selectedReward.remaining <= 0 || noCandidates"
+                        class="spin-button" :class="{ spinning: isSpinning }">
+                        {{ spinButtonText }}
+                    </button>
                 </div>
+
+                <div v-if="showConfetti" class="confetti">
+                    <i v-for="(c, i) in confettiPieces" :key="i" :style="c"></i>
+                </div>
+            </template>
+
+            <div v-else class="welcome animate__animated animate__fadeIn">
+                <div class="stage-eyebrow">Lễ quay thưởng</div>
+                <div class="stage-program">{{ selectedProgramName }}</div>
+                <div class="welcome-title">Chào mừng quý khách</div>
+                <div class="welcome-hint">Vui lòng chọn một giải thưởng phía trên để bắt đầu.</div>
             </div>
         </main>
 
-        <footer class="mt-auto p-6 text-center text-white/40 text-xs border-t border-white/5 bg-black/10">
-            Hệ thống Quay số may mắn TDbank&bull; Phiên bản Offline
-        </footer>
+        <!-- Danh sách trúng giải -->
+        <section v-if="activeTab === 'winners'" class="winners-view animate__animated animate__fadeIn">
+            <div class="winners-panel">
+                <div class="winners-head">
+                    <h2>Danh sách khách hàng trúng thưởng</h2>
+                    <button @@click="activeTab = 'draw'" class="back-button">Quay lại</button>
+                </div>
+
+                <div class="winners-scroll">
+                    <div v-if="winnersList.length === 0" class="empty-state">
+                        Chưa có dữ liệu người trúng giải.
+                    </div>
+
+                    <div v-for="group in groupedWinners" :key="group.rewardId" class="winner-group">
+                        <h3>{{ group.rewardName }}</h3>
+                        <table class="winners-table">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Mã khách hàng</th>
+                                    <th>Tên khách hàng</th>
+                                    <th>Thời gian</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(w, idx) in group.winners" :key="w.id">
+                                    <td>{{ idx + 1 }}</td>
+                                    <td class="code">{{ w.resultCode }}</td>
+                                    <td class="name">{{ w.customerName }}</td>
+                                    <td class="time">{{ formatDate(w.timeStamp) }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">Hệ thống quay số may mắn TDbank &bull; Phiên bản Offline</footer>
     </div>
 
     <script src="~/lib/signalr/signalr.min.js"></script>
@@ -447,8 +1011,10 @@
         let baseUrl = "@baseUrl";
         if (baseUrl && !baseUrl.endsWith('/')) baseUrl += '/';
         const BASE_URL = baseUrl;
-        
+
         axios.defaults.baseURL = BASE_URL;
+        axios.defaults.headers.common['RequestVerificationToken'] =
+            document.querySelector('input[name="__RequestVerificationToken"]').value;
 
         const connection = new signalR.HubConnectionBuilder()
             .withUrl(BASE_URL + "luckyHub")
@@ -456,6 +1022,122 @@
             .build();
 
         connection.start().catch(err => console.error(err));
+
+        const DEFAULT_DIGITS = 10;
+        const SPIN_TIMEOUT_MS = 30000;
+        const DIGIT_FRAME_MS = 60;   // ~16 lần đổi số/giây: đủ mượt, nhẹ cho máy yếu
+        const DIGIT_LOCK_MS = 220;   // Khoảng cách giữa 2 lần dừng số (dừng lần lượt từ trái sang phải)
+        const DEFAULT_SPIN_MS = 3000; // Thời gian quay khi không đọc được độ dài âm thanh
+        const BATCH_PAUSE_MS = 2000;  // Quay tất cả: thời gian dừng ở mỗi người trúng trước khi quay người kế
+        const BATCH_SPIN_MS = 2500;   // Quay tất cả: thời gian quay cho mỗi người từ người thứ 2 trở đi
+        const CONFETTI_MS = 4500;
+        const MUTE_KEY = 'luckydraw-muted';
+        // crypto.randomUUID chỉ có trên https/localhost, khi chạy qua IP mạng LAN thì dùng cách dự phòng
+        const newRequestId = () => (window.crypto && crypto.randomUUID)
+            ? crypto.randomUUID()
+            : Date.now().toString(36) + Math.random().toString(36).slice(2);
+        const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        const randomDigit = () => Math.floor(Math.random() * 10);
+
+        // Tạo sẵn pháo giấy 1 lần (vị trí, màu, tốc độ ngẫu nhiên)
+        const CONFETTI_COLORS = ['#ffe9a3', '#f2b632', '#ffffff', '#ff6b6b'];
+        const confettiPieces = Array.from({ length: 36 }, (_, i) => ({
+            left: (Math.random() * 100).toFixed(1) + '%',
+            background: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+            animationDelay: (Math.random() * 0.8).toFixed(2) + 's',
+            animationDuration: (2.4 + Math.random() * 1.6).toFixed(2) + 's',
+            '--spin': Math.round(360 + Math.random() * 720) + 'deg'
+        }));
+
+        // ===== Hiệu ứng âm thanh tạo trực tiếp bằng Web Audio API: không cần file, rất nhẹ, chạy offline =====
+        const Sfx = (() => {
+            let ctx = null;
+            let isMuted = () => false;
+            const NOTES = { G5: 783.99, C6: 1046.5, E6: 1318.5, G6: 1568 };
+
+            const audio = () => {
+                if (isMuted()) return null;
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                if (!AudioCtx) return null;
+                if (!ctx) ctx = new AudioCtx();
+                if (ctx.state === 'suspended') ctx.resume().catch(() => { });
+                return ctx;
+            };
+
+            // 1 nốt: tần số (có thể trượt tới "to"), dạng sóng, âm lượng, bắt đầu sau "at" giây, dài "dur" giây
+            const tone = (ac, { freq, to, type = 'sine', vol = 0.15, at = 0, dur = 0.15 }) => {
+                const t = ac.currentTime + at;
+                const osc = ac.createOscillator();
+                const gain = ac.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, t);
+                if (to) osc.frequency.exponentialRampToValueAtTime(to, t + dur);
+                gain.gain.setValueAtTime(0.0001, t);
+                gain.gain.exponentialRampToValueAtTime(vol, t + 0.01);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                osc.connect(gain).connect(ac.destination);
+                osc.start(t);
+                osc.stop(t + dur + 0.02);
+            };
+
+            // Tiếng gõ/lướt: nhiễu trắng qua bộ lọc
+            const noise = (ac, { at = 0, dur = 0.05, vol = 0.1, from = 2000, to = 2000 }) => {
+                const t = ac.currentTime + at;
+                const buffer = ac.createBuffer(1, Math.ceil(ac.sampleRate * dur), ac.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+                const src = ac.createBufferSource();
+                src.buffer = buffer;
+                const filter = ac.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(from, t);
+                filter.frequency.exponentialRampToValueAtTime(to, t + dur);
+                const gain = ac.createGain();
+                gain.gain.setValueAtTime(vol, t);
+                gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+                src.connect(filter).connect(gain).connect(ac.destination);
+                src.start(t);
+                src.stop(t + dur);
+            };
+
+            const play = (fn) => { const ac = audio(); if (ac) fn(ac); };
+
+            return {
+                setMuted(fn) { isMuted = fn; },
+                // Bấm nút quay
+                press: () => play(ac => {
+                    tone(ac, { freq: 320, to: 110, type: 'triangle', vol: 0.3, dur: 0.14 });
+                    noise(ac, { dur: 0.05, vol: 0.08, from: 3000, to: 700 });
+                }),
+                // Mỗi ô số dừng: tiếng "cạch", cao dần từ trái sang phải
+                lock: (index, total) => play(ac => {
+                    const freq = 520 + 520 * (index / Math.max(1, total - 1));
+                    noise(ac, { dur: 0.035, vol: 0.16, from: 4500, to: 1500 });
+                    tone(ac, { freq, type: 'square', vol: 0.05, dur: 0.08 });
+                }),
+                // Đổi giải: tiếng lướt nhẹ
+                select: () => play(ac => {
+                    noise(ac, { dur: 0.2, vol: 0.05, from: 500, to: 4000 });
+                    tone(ac, { freq: NOTES.G5, vol: 0.07, at: 0.12, dur: 0.25 });
+                }),
+                // Công bố từng người khi quay tất cả (ngắn, nhẹ hơn nhạc kèn)
+                ding: () => play(ac => {
+                    [NOTES.C6, NOTES.E6, NOTES.G6].forEach((freq, i) => tone(ac, { freq, vol: 0.12, at: i * 0.07, dur: 0.6 }));
+                }),
+                // Lấp lánh khi pháo giấy bung
+                sparkle: () => play(ac => {
+                    for (let i = 0; i < 10; i++) {
+                        tone(ac, { freq: 1800 + Math.random() * 2000, vol: 0.035, at: 0.05 + i * 0.07 + Math.random() * 0.03, dur: 0.14 });
+                    }
+                }),
+                // Báo lỗi
+                error: () => play(ac => {
+                    tone(ac, { freq: 220, type: 'sawtooth', vol: 0.07, dur: 0.18 });
+                    tone(ac, { freq: 165, type: 'sawtooth', vol: 0.07, at: 0.2, dur: 0.32 });
+                })
+            };
+        })();
+
         const { createApp, ref, computed, onMounted, watch } = Vue;
 
         createApp({
@@ -467,9 +1149,35 @@
                 const selectedReward = ref(null);
                 const winnersList = ref([]);
                 const isSpinning = ref(false);
-                const codeDigits = ref(['?', '?', '?', '?', '?', '?', '?', '?', '?', '?']); // Matching photo length
-                const lastWinner = ref(null);
+                const codeDigits = ref(Array(DEFAULT_DIGITS).fill('?'));
+                const lockedCount = ref(0); // Số ô số đã dừng (tính từ trái)
+                const lastWinner = ref(null);       // Kết quả lượt quay vừa xong
+                const currentWinner = ref(null);    // Người đang hiển thị trên thẻ (quay tất cả: từng người một)
+                const progress = ref(null);         // Quay tất cả: { index, total } người đang quay
+                const isRolling = ref(false);       // Các ô số đang chạy
+                const eligibleCount = ref(null);    // Số khách còn đủ điều kiện quay (null: chưa tải được)
                 const errorMessage = ref(null);
+                const showConfetti = ref(false);
+                let confettiTimer = null;
+
+                // Tắt/bật tiếng: nhớ lựa chọn trên trình duyệt này (localStorage có thể bị chặn => bỏ qua)
+                const readMuted = () => {
+                    try { return localStorage.getItem(MUTE_KEY) === '1'; } catch { return false; }
+                };
+                const isMuted = ref(readMuted());
+                const applyMute = () => {
+                    ['spin-sound', 'win-sound'].forEach(id => {
+                        const audio = document.getElementById(id);
+                        if (audio) audio.muted = isMuted.value;
+                    });
+                };
+                Sfx.setMuted(() => isMuted.value);
+
+                const toggleMute = () => {
+                    isMuted.value = !isMuted.value;
+                    applyMute();
+                    try { localStorage.setItem(MUTE_KEY, isMuted.value ? '1' : '0'); } catch { }
+                };
 
                 const fetchPrograms = async () => {
                     try {
@@ -493,13 +1201,31 @@
                     } catch (err) { console.error(err); }
                 };
 
+                const fetchEligible = async () => {
+                    try {
+                        const response = await axios.get('api/luckydrawapi/eligible');
+                        eligibleCount.value = response.data.eligible;
+                    } catch (err) { console.error(err); }
+                };
+
+                // Không còn ai để trúng => khóa nút quay (chưa tải được số liệu thì không khóa)
+                const noCandidates = computed(() => eligibleCount.value !== null && eligibleCount.value <= 0);
+
+                const resetDigits = () => {
+                    lockedCount.value = 0;
+                    codeDigits.value = Array(digitCount()).fill('?');
+                };
+
                 const selectPrize = (reward) => {
+                    if (isSpinning.value) return;
+                    Sfx.select();
                     activeTab.value = 'draw';
                     selectedReward.value = reward;
                     lastWinner.value = null;
+                    currentWinner.value = null;
                     errorMessage.value = null;
-                    // Reset digits
-                    codeDigits.value = Array(10).fill('?');
+                    showConfetti.value = false;
+                    resetDigits();
                 };
 
                 const fetchWinners = async () => {
@@ -508,6 +1234,19 @@
                         winnersList.value = response.data;
                     } catch (err) { console.error(err); }
                 };
+
+                // Lượt quay vừa xong ra nhiều người (loại giải quay tất cả)
+                const showBatch = computed(() =>
+                    !!lastWinner.value && !isSpinning.value && (lastWinner.value.winners?.length || 0) > 1);
+
+                const spinButtonText = computed(() => {
+                    const reward = selectedReward.value;
+                    if (isSpinning.value) {
+                        return progress.value ? `Đang quay ${progress.value.index}/${progress.value.total}` : 'Đang quay...';
+                    }
+                    if (!reward || reward.remaining <= 0) return 'Đã hết giải';
+                    return reward.spinAll ? `Quay tất cả (${reward.remaining})` : 'Quay số';
+                });
 
                 const selectedProgramName = computed(() => {
                     const prog = programs.value.find(p => p.id === selectedProgram.value);
@@ -527,64 +1266,175 @@
                     return groups;
                 });
 
-                const startSpin = async () => {
-                    if (isSpinning.value || !selectedReward.value) return;
+                // Lỗi khi quay: lệnh từ Remote thì báo về Remote, bấm trên màn hình thì báo tại màn hình
+                const showSpinError = (message, fromRemote) => {
+                    if (fromRemote) {
+                        connection.invoke("SendSpinError", message).catch(err => console.error(err));
+                    } else {
+                        errorMessage.value = message;
+                    }
+                };
+
+                // Dừng từng ô số lần lượt từ trái sang phải
+                const revealDigits = async (finalDigits) => {
+                    if (codeDigits.value.length !== finalDigits.length) {
+                        codeDigits.value = finalDigits.map(randomDigit);
+                    }
+                    for (let i = 0; i < finalDigits.length; i++) {
+                        const next = codeDigits.value.slice();
+                        next[i] = finalDigits[i];
+                        codeDigits.value = next;
+                        lockedCount.value = i + 1;
+                        Sfx.lock(i, finalDigits.length);
+                        if (i < finalDigits.length - 1) await sleep(DIGIT_LOCK_MS);
+                    }
+                };
+
+                // fanfare = true: nhạc kèn chiến thắng; false: hợp âm "ding" ngắn (từng người khi quay tất cả)
+                const celebrate = (fanfare = true) => {
+                    const winAudio = document.getElementById('win-sound');
+                    if (fanfare && winAudio) {
+                        winAudio.pause();
+                        winAudio.currentTime = 0;
+                        winAudio.play().catch(e => console.warn("Audio play blocked by browser:", e));
+                    } else if (!fanfare) {
+                        Sfx.ding();
+                    }
+                    Sfx.sparkle();
+                    clearTimeout(confettiTimer);
+                    showConfetti.value = false;
+                    requestAnimationFrame(() => { showConfetti.value = true; });
+                    confettiTimer = setTimeout(() => { showConfetti.value = false; }, CONFETTI_MS);
+                };
+
+                // Phát âm thanh quay, trả về thời lượng (ms) để canh lúc dừng số
+                const playSpinSound = () => {
+                    const audio = document.getElementById('spin-sound');
+                    if (!audio) return DEFAULT_SPIN_MS;
+                    audio.pause();
+                    audio.currentTime = 0;
+                    audio.play().catch(e => console.warn("Audio play blocked:", e));
+                    return Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration * 1000 : DEFAULT_SPIN_MS;
+                };
+
+                const stopSpinSound = () => {
+                    const audio = document.getElementById('spin-sound');
+                    if (audio) audio.pause();
+                };
+
+                // Cho các ô số chạy ngẫu nhiên; trả về hàm dừng.
+                // Dùng requestAnimationFrame thay vì setInterval: không dồn việc khi máy chậm, tự dừng khi tab bị ẩn.
+                const startRolling = () => {
+                    lockedCount.value = 0;
+                    isRolling.value = true;
+                    let animationFrame = 0;
+                    let lastTick = 0;
+                    const tick = (now) => {
+                        if (now - lastTick >= DIGIT_FRAME_MS) {
+                            lastTick = now;
+                            // Ô đã dừng thì giữ nguyên
+                            codeDigits.value = codeDigits.value.map((d, i) => i < lockedCount.value ? d : randomDigit());
+                        }
+                        animationFrame = requestAnimationFrame(tick);
+                    };
+                    animationFrame = requestAnimationFrame(tick);
+                    return () => {
+                        cancelAnimationFrame(animationFrame);
+                        isRolling.value = false;
+                    };
+                };
+
+                // requestId chỉ có khi lệnh quay đến từ Remote
+                const startSpin = async (requestId) => {
+                    if (isSpinning.value || !selectedReward.value || noCandidates.value) return;
+                    const fromRemote = typeof requestId === 'string';
 
                     isSpinning.value = true;
+                    Sfx.press();
                     lastWinner.value = null;
-                    
-                    // Phát âm thanh vòng quay
-                    const spinBtnAudio = document.getElementById('spin-sound');
-                    let spinDuration = 3000; // Mặc định 3s nếu không có âm thanh
+                    currentWinner.value = null;
+                    progress.value = null;
+                    showConfetti.value = false;
 
-                    if (spinBtnAudio) {
-                        spinBtnAudio.pause();
-                        spinBtnAudio.currentTime = 0;
-                        spinBtnAudio.play().catch(e => console.warn("Audio play blocked:", e));
-                        // Lấy thời lượng thực tế của file âm thanh (đổi ra ms)
-                        if (spinBtnAudio.duration) {
-                            spinDuration = spinBtnAudio.duration * 1000;
-                        }
+                    let roundStartedAt = performance.now();
+                    let roundDuration = playSpinSound();
+                    let stopRolling = startRolling();
+
+                    let winnerData;
+                    try {
+                        // Gọi API lấy kết quả ngay từ đầu để tránh trễ (server đã lưu toàn bộ người trúng).
+                        // requestId: lệnh từ Remote dùng chung 1 mã cho mọi màn hình => chỉ ra 1 kết quả
+                        const response = await axios.post('api/luckydrawapi/spin', {
+                            rewardId: selectedReward.value.id,
+                            requestId: fromRemote ? requestId : newRequestId(),
+                            source: fromRemote ? 'remote' : 'web'
+                        }, { timeout: SPIN_TIMEOUT_MS });
+                        winnerData = response.data;
+                    } catch (err) {
+                        stopRolling();
+                        stopSpinSound();
+                        isSpinning.value = false;
+                        resetDigits();
+                        showSpinError(getErrorMessage(err), fromRemote);
+                        fetchPrizes();
+                        fetchEligible();
+                        return;
                     }
 
-                    const animationInterval = setInterval(() => {
-                        codeDigits.value = codeDigits.value.map(() => Math.floor(Math.random() * 10));
-                    }, 50);
+                    // Quay tất cả: hiện lần lượt từng người, dừng BATCH_PAUSE_MS rồi quay tiếp người kế
+                    const winners = winnerData.winners?.length
+                        ? winnerData.winners
+                        : [{ customerCode: winnerData.customerCode, name: winnerData.name }];
 
                     try {
-                        // Gọi API lấy kết quả ngay từ đầu để tránh trễ
-                        const response = await axios.post('api/luckydrawapi/spin', {
-                            rewardId: selectedReward.value.id
-                        });
-
-                        const winnerData = response.data;
-
-                        // Chờ cho đến khi hết âm thanh mới hiện kết quả
-                        setTimeout(() => {
-                            clearInterval(animationInterval);
-                            const code = winnerData.customerCode.toString();
-                            const paddedCode = code.padStart(codeDigits.value.length, '0');
-                            codeDigits.value = paddedCode.split('');
-
-                            lastWinner.value = winnerData;
-                            isSpinning.value = false;
-
-                            const winAudio = document.getElementById('win-sound');
-                            if (winAudio) {
-                                winAudio.pause();
-                                winAudio.currentTime = 0;
-                                winAudio.play().catch(e => console.warn("Audio play blocked by browser:", e));
+                        for (let i = 0; i < winners.length; i++) {
+                            if (i > 0) {
+                                await sleep(BATCH_PAUSE_MS);
+                                currentWinner.value = null;
+                                roundStartedAt = performance.now();
+                                roundDuration = Math.min(playSpinSound(), BATCH_SPIN_MS);
+                                stopRolling = startRolling();
                             }
+                            if (winners.length > 1) progress.value = { index: i + 1, total: winners.length };
 
-                            fetchPrizes();
-                        }, spinDuration);
+                            const finalDigits = String(winners[i].customerCode ?? '').padStart(digitCount(), '0').split('');
 
-                    } catch (err) {
-                        clearInterval(animationInterval);
+                            // Bắt đầu dừng số sao cho ô cuối cùng dừng đúng lúc hết thời gian quay
+                            const revealTime = (finalDigits.length - 1) * DIGIT_LOCK_MS;
+                            await sleep(Math.max(0, roundDuration - (performance.now() - roundStartedAt) - revealTime));
+                            await revealDigits(finalDigits);
+                            stopRolling();
+                            stopSpinSound();
+
+                            currentWinner.value = { ...winners[i], no: i + 1, total: winners.length };
+                            if (selectedReward.value) {
+                                selectedReward.value.remaining = Math.max(0, selectedReward.value.remaining - 1);
+                            }
+                            celebrate(winners.length === 1);
+                        }
+
+                        // Hết lượt: dừng thêm một chút ở người cuối rồi hiện danh sách tổng hợp (kèm nhạc kèn)
+                        if (winners.length > 1) await sleep(BATCH_PAUSE_MS);
+                        lastWinner.value = winnerData;
+                        if (winners.length > 1) celebrate(true);
+                    } finally {
+                        stopRolling();
+                        progress.value = null;
                         isSpinning.value = false;
-                        codeDigits.value = Array(10).fill('?');
-                        errorMessage.value = err.response?.data || "Lỗi hệ thống khi quay số.";
+                        fetchPrizes();
+                        fetchEligible();
                     }
+                };
+
+                const digitCount = () => selectedReward.value?.numberLength || DEFAULT_DIGITS;
+
+                const getErrorMessage = (err) => {
+                    const data = err.response?.data;
+                    if (typeof data === 'string' && data) return data;
+                    if (data?.title) return data.title;
+                    if (err.code === 'ECONNABORTED') return 'Máy chủ phản hồi quá lâu, vui lòng thử lại.';
+                    if (!err.response) return 'Mất kết nối tới máy chủ, vui lòng kiểm tra mạng.';
+                    return 'Lỗi hệ thống khi quay số.';
                 };
 
                 const formatDate = (dateStr) => {
@@ -592,14 +1442,41 @@
                     return date.toLocaleString('vi-VN');
                 };
 
-                onMounted(fetchPrograms);
+                onMounted(() => {
+                    applyMute();
+                    fetchPrograms();
+                    fetchEligible();
+                });
 
                 // SignalR logic - Move to end of setup to ensure refs are defined
-                connection.on("ReceiveSpinCommand", () => {
-                    if (activeTab.value === 'draw' && selectedReward.value && !isSpinning.value) {
-                        startSpin();
+                connection.on("ReceiveSpinCommand", (requestId) => {
+                    if (isSpinning.value) return;
+                    if (activeTab.value !== 'draw' || !selectedReward.value) {
+                        showSpinError('Màn hình quay số chưa chọn giải thưởng!', true);
+                        return;
                     }
+                    if (selectedReward.value.remaining <= 0) {
+                        showSpinError('Đã hết lượt quay cho giải thưởng này!', true);
+                        return;
+                    }
+                    if (noCandidates.value) {
+                        showSpinError('Không còn khách hàng nào đủ điều kiện quay!', true);
+                        return;
+                    }
+                    startSpin(requestId);
                 });
+
+                // Report xóa người trúng => cập nhật lại số lượt còn lại và danh sách trúng giải ngay
+                const refreshRewards = () => {
+                    fetchPrizes();
+                    fetchEligible();
+                    if (activeTab.value === 'winners') fetchWinners();
+                };
+                connection.on("RewardsChanged", refreshRewards);
+                // Mất kết nối có thể bỏ lỡ thông báo => tải lại khi kết nối lại
+                connection.onreconnected(refreshRewards);
+
+                watch(errorMessage, (message) => { if (message) Sfx.error(); });
 
                 watch(isSpinning, (newVal) => {
                     connection.invoke("SendStatus", newVal ? "spinning" : "ready").catch(err => console.error(err));
@@ -607,9 +1484,10 @@
 
                 return {
                     activeTab, programs, selectedProgram, prizes, selectedReward,
-                    winnersList, groupedWinners, isSpinning, codeDigits, lastWinner,
+                    winnersList, groupedWinners, isSpinning, codeDigits, lockedCount, lastWinner,
                     fetchPrizes, fetchWinners, startSpin, formatDate, selectPrize,
-                    selectedProgramName, errorMessage
+                    selectedProgramName, errorMessage, showConfetti, confettiPieces, isMuted, toggleMute, spinButtonText, showBatch,
+                    currentWinner, isRolling, noCandidates
                 };
             }
         }).mount('#app');
